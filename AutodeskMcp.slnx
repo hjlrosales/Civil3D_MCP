@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/shared/">
+    <Project Path="src/shared/Autodesk.Mcp.Shared/Autodesk.Mcp.Shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Autodesk.Mcp.Shared.Tests/Autodesk.Mcp.Shared.Tests.csproj" />
+  </Folder>
+</Solution>

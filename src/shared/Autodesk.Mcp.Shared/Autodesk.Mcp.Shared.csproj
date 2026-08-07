@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Autodesk.Mcp.Shared</RootNamespace>
+    <AssemblyName>Autodesk.Mcp.Shared</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <NuGetAudit>false</NuGetAudit>
+    <IsPackable>false</IsPackable>
+    <Description>Shared protocol contracts for the Autodesk MCP Platform (Bridge &amp; MCP Server). No Autodesk references.</Description>
+  </PropertyGroup>
+
+</Project>
