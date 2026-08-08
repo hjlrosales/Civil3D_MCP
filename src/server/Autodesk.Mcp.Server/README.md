@@ -13,7 +13,7 @@ tool as an MCP tool. No tool is hardcoded.
 - Node.js **>= 20** (Windows)
 - A running Autodesk product with the bridge loaded:
   - `Civil3D.Bridge` inside Autodesk Civil 3D 2025/2026 (see the platform
-    [installation guide](https://github.com/your-org/autodesk-mcp-platform/blob/main/docs/Installation.md))
+    [installation guide](https://github.com/hjlrosales/Civil3D_MCP/blob/main/docs/Installation.md))
 
 ## Usage
 
@@ -40,7 +40,7 @@ autodesk-mcp-server [options]
 ## Configuration
 
 Precedence: **defaults -> configuration file -> environment variables**. See
-[Configuration.md](https://github.com/your-org/autodesk-mcp-platform/blob/main/docs/Configuration.md)
+[Configuration.md](https://github.com/hjlrosales/Civil3D_MCP/blob/main/docs/Configuration.md)
 for the full option reference and `examples/config/server.config.json` for a sample.
 
 All logging is structured JSON on **stderr**; stdout is reserved for MCP traffic.
@@ -49,7 +49,7 @@ All logging is structured JSON on **stderr**; stdout is reserved for MCP traffic
 
 Point your MCP client at the server binary. Ready-made configurations for Claude
 Desktop, VS Code, Cursor and Cline live in
-[`examples/clients`](https://github.com/your-org/autodesk-mcp-platform/tree/main/examples/clients).
+[`examples/clients`](https://github.com/hjlrosales/Civil3D_MCP/tree/main/examples/clients).
 
 ## License
 

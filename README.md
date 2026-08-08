@@ -67,8 +67,8 @@ See `docs/DeveloperGuide.md` and `docs/Contributing.md`.
 
 ## Releases
 
-Version `1.0.0-rc.1` (RC1) with the Phase 9 production-hardening work complete
-(see `docs/PRODUCTION-HARDENING.md` and `docs/RELEASE-1.0.0-RC2.md`). Tags follow
+Version `1.0.0` (GA) with the Phase 9 production-hardening work complete
+(see `docs/PRODUCTION-HARDENING.md` and `docs/RELEASE-1.0.0-FINAL.md`). Tags follow
 `v<semver>`; see `docs/ReleaseProcess.md`.
 
 ## License
