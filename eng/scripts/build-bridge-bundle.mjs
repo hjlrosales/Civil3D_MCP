@@ -61,6 +61,15 @@ mkdirSync(path.join(bundleDir, 'Contents'), { recursive: true });
 
 copyFileSync(template, path.join(bundleDir, 'PackageContents.xml'));
 
+// Ship the license alongside the bundle so the plugin distribution carries it.
+const licenseFile = path.join(root, 'LICENSE');
+if (existsSync(licenseFile)) {
+  copyFileSync(licenseFile, path.join(bundleDir, 'LICENSE'));
+  console.log('[bundle] included LICENSE (MIT) at bundle root');
+} else {
+  console.warn('[bundle] LICENSE not found at repo root; skipping');
+}
+
 const excluded = new Set(['.pdb', '.xml']); // debug symbols + XML doc files are development-only
 for (const entry of readdirSync(publishDir)) {
   const source = path.join(publishDir, entry);
