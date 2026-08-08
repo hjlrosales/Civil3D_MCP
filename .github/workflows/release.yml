@@ -41,17 +41,17 @@ jobs:
 
   # The .NET solution is not actually SDK-free (domain and tools projects compile
   # Autodesk data sources), so it needs the Civil 3D SDK machine. Runs on the
-  # self-hosted runner; uses the exact SDK version installed there so
-  # actions/setup-dotnet does not attempt an admin-level install into
-  # C:\Program Files\dotnet.
+  # self-hosted runner and uses the SDK already installed there. actions/setup-dotnet
+  # cannot be used: it fails to detect the machine-wide SDK in the job environment
+  # and attempts an admin-level install into C:\Program Files\dotnet.
   dotnet-core:
     name: .NET (core)
     runs-on: [self-hosted, windows, civil3d]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.301'
+      - name: Add .NET SDK to PATH
+        shell: pwsh
+        run: echo "C:\Program Files\dotnet" >> $env:GITHUB_PATH
       - run: dotnet build AutodeskMcp.Core.slnx -c Release --nologo
       - run: dotnet test AutodeskMcp.Core.slnx -c Release --nologo --no-build
 
@@ -82,9 +82,9 @@ jobs:
     runs-on: [self-hosted, windows, civil3d]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.301'
+      - name: Add .NET SDK to PATH
+        shell: pwsh
+        run: echo "C:\Program Files\dotnet" >> $env:GITHUB_PATH
       - run: dotnet build AutodeskMcp.slnx -c Release --nologo
       - run: dotnet test AutodeskMcp.slnx -c Release --nologo
       - run: node eng/scripts/build-bridge-bundle.mjs
