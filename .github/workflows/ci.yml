@@ -55,7 +55,7 @@ jobs:
       - name: Fresh-install validation
         run: |
           TARBALL=$(ls "${{ github.workspace }}/artifacts/packages"/*.tgz | head -1)
-          node eng/scripts/validate-fresh-install.mjs --server --tarball="$TARBALL
+          node eng/scripts/validate-fresh-install.mjs --server --tarball="$TARBALL"
       - uses: actions/upload-artifact@v4
         with:
           name: server-package

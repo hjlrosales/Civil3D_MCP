@@ -36,6 +36,31 @@ All stages PASS on the 1.0.0 build:
 
 Zero warnings, zero errors.
 
+### CI/CD run results (actual)
+
+The official release was produced by the **Release** workflow (`release.yml`) on the
+`v1.0.0` tag (commit `19f36d3`):
+
+| Job | Result |
+| --- | --- |
+| Node (server) - build & pack | PASS |
+| .NET (core) | PASS |
+| Bridge bundle (Civil 3D SDK runner) | PASS |
+| E2E (real server process) | PASS |
+| Publish to npm | PASS (publish skipped - see note below) |
+| GitHub Release | PASS |
+
+Run: `31259233823` (green) on commit `19f36d3`. The **GitHub Release** was
+created successfully and is live at `v1.0.0` (published 2026-08-08, not a
+prerelease) with all four assets: `autodesk-mcp-server-1.0.0.tgz`,
+`Civil3D.Bridge.Bundle-1.0.0.zip`, `release-manifest.json` and `SHA256SUMS`.
+
+> **Note**: an earlier push-triggered **CI** run (`31261449860`, same commit)
+> failed only in the `fresh-install` step of the Node job due to a missing
+> closing quote in `ci.yml` (`--tarball="$TARBALL`). This was a workflow-script
+> typo, not a product defect; it has been fixed (the quote is now closed) so
+> subsequent push CI runs pass. The release pipeline itself was unaffected.
+
 ### Packaging results
 
 - `autodesk-mcp-server-1.0.0.tgz` - npm pack succeeds; contains only compiled
@@ -79,13 +104,14 @@ shutdown, multi-instance bridge selection.
 
 | Artifact | Version | SHA-256 | Size (bytes) |
 | --- | --- | --- | --- |
-| Civil3D.Bridge.Bundle-1.0.0.zip | 1.0.0 | `29d72547d49fe5a23687f6f42ba314e537d51e7350ee096e504363029666e9c6` | 3,963,242 |
-| autodesk-mcp-server-1.0.0.tgz | 1.0.0 | `b0f80b2b2b35a2f7394bf42cbf3b39bbc5012e1dae410a2899e1720577c24212` | 27,921 |
+| Civil3D.Bridge.Bundle-1.0.0.zip | 1.0.0 | `5f469e6c436beb572e4e252c2c0d06de5a1d5bcf8156ffaaf4091dad825eca19` | 3,964,467 |
+| autodesk-mcp-server-1.0.0.tgz | 1.0.0 | `df0822bda78f9e4c62bbe767c304fdede099e4e7abbc63152d38194c883dec69` | 28,731 |
 
-Machine-readable manifest: `artifacts/release-manifest.json` (includes build
-UTC timestamps and platform `win32 x64`). Checksums: `artifacts/SHA256SUMS`.
-The `release.yml` workflow attaches both to the GitHub Release together with the
-artifacts and release notes.
+These are the hashes of the artifacts actually attached to the GitHub Release
+(verified from the released `SHA256SUMS`). Machine-readable manifest:
+`artifacts/release-manifest.json` (includes build UTC timestamps and platform
+`win32 x64`). Checksums: `artifacts/SHA256SUMS`. The `release.yml` workflow
+attaches both to the GitHub Release together with the artifacts and release notes.
 
 ---
 
@@ -129,9 +155,24 @@ and log files, so rollback is safe. See `docs/RELEASE-1.0.0.md` (Rollback).
 **The implementation is ready for production.** All quality gates pass, all
 release artifacts are validated and clean, the security sweep found no
 credentials/tokens/secrets, the final regression suite passes with zero
-warnings and zero errors, and the release pipeline (`release.yml`) is configured
-to produce the GitHub Release with artifacts, manifest and checksums when the
-`v1.0.0` tag is pushed.
+warnings and zero errors, and the release pipeline (`release.yml`) has produced
+the GitHub Release with artifacts, manifest and checksums from the `v1.0.0` tag
+(run `31259233823`, all jobs green).
+
+### Manual step: npm registry publish
+
+The npm **registry** publish is the one remaining manual step. `NPM_TOKEN` is
+not configured as a repository secret, so the `Publish to npm` job skips the
+actual publish (it logs "NPM_TOKEN not configured - skipping npm publish" and
+exits 0). The publishable tarball `autodesk-mcp-server-1.0.0.tgz` is attached to
+the GitHub Release, so the artifact is complete, but `autodesk-mcp-server@1.0.0`
+is **not yet on the npm registry** (registry lookup returns 404).
+
+To publish: add an npm automation/granular (read + write) access token as the
+`NPM_TOKEN` Actions secret on the repository, then re-run the `Release`
+workflow. The publish job will publish automatically; the idempotency guard
+(`npm view autodesk-mcp-server@$VERSION`) prevents duplicate publishes, and the
+publish step also requests npm provenance (`--provenance`).
 
 ---
 
