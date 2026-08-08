@@ -4,8 +4,7 @@
 
 **GA / Production Release** - v1.0.0
 
-- Git commit: `635b049` (release commit)
-- Git tag: `v1.0.0`
+- Git tag: `v1.0.0` (see `git rev-parse v1.0.0^{}` for the release commit)
 - Date: 2026-08-08
 - Promoted from: 1.0.0-rc.2 (RC2, Phase 9 hardening) with version
   synchronization and release-artifact cleanup only.

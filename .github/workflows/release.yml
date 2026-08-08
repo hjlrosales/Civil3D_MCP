@@ -89,11 +89,12 @@ jobs:
           path: artifacts/bundles/
           if-no-files-found: error
 
-  # Publishes the server to npm. Skipped when the NPM_TOKEN secret is not configured.
+  # Publishes the server to npm. The publish step is skipped when the NPM_TOKEN
+  # secret is not configured. (The secrets context is only available at step level,
+  # not in a job-level if, so the check lives on the step.)
   npm-publish:
     name: Publish to npm
     needs: [node, dotnet-core]
-    if: ${{ secrets.NPM_TOKEN != '' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -103,7 +104,9 @@ jobs:
           registry-url: https://registry.npmjs.org
       - run: npm ci
         working-directory: src/server/Autodesk.Mcp.Server
-      - run: npm publish --provenance --access public
+      - name: Publish to npm (skipped when NPM_TOKEN is not configured)
+        if: ${{ secrets.NPM_TOKEN != '' }}
+        run: npm publish --provenance --access public
         working-directory: src/server/Autodesk.Mcp.Server
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
