@@ -110,10 +110,14 @@ jobs:
     name: Bridge (Civil 3D SDK runner)
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: [self-hosted, windows, civil3d]
+    defaults:
+      run:
+        # pwsh (PowerShell Core) is not on the runner's PATH; use Windows
+        # PowerShell 5.1 which is always present on Windows hosts.
+        shell: powershell
     steps:
       - uses: actions/checkout@v4
       - name: Add .NET SDK to PATH
-        shell: pwsh
         run: echo "C:\Program Files\dotnet" >> $env:GITHUB_PATH
       - name: Build (full solution incl. bridge)
         run: dotnet build AutodeskMcp.slnx -c Release --nologo

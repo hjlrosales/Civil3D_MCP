@@ -47,10 +47,14 @@ jobs:
   dotnet-core:
     name: .NET (core)
     runs-on: [self-hosted, windows, civil3d]
+    defaults:
+      run:
+        # pwsh (PowerShell Core) is not on the runner's PATH; use Windows
+        # PowerShell 5.1 which is always present on Windows hosts.
+        shell: powershell
     steps:
       - uses: actions/checkout@v4
       - name: Add .NET SDK to PATH
-        shell: pwsh
         run: echo "C:\Program Files\dotnet" >> $env:GITHUB_PATH
       - run: dotnet build AutodeskMcp.Core.slnx -c Release --nologo
       - run: dotnet test AutodeskMcp.Core.slnx -c Release --nologo --no-build
@@ -80,10 +84,14 @@ jobs:
   bridge:
     name: Bridge bundle (Civil 3D SDK runner)
     runs-on: [self-hosted, windows, civil3d]
+    defaults:
+      run:
+        # pwsh (PowerShell Core) is not on the runner's PATH; use Windows
+        # PowerShell 5.1 which is always present on Windows hosts.
+        shell: powershell
     steps:
       - uses: actions/checkout@v4
       - name: Add .NET SDK to PATH
-        shell: pwsh
         run: echo "C:\Program Files\dotnet" >> $env:GITHUB_PATH
       - run: dotnet build AutodeskMcp.slnx -c Release --nologo
       - run: dotnet test AutodeskMcp.slnx -c Release --nologo
