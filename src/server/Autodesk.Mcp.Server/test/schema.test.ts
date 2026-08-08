@@ -69,6 +69,23 @@ describe('schema validation (ajv)', () => {
     expect(validator.validate('cogo', njs, { name: 'A-1' })).toBeNull();
     expect(validator.validate('cogo', njs, {})).not.toBeNull();
   });
+
+  it('handles the bridge draft-04 schemas and boolean exclusive bounds', () => {
+    const njs04 = {
+      $schema: 'http://json-schema.org/draft-04/schema#',
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        length: { type: 'number', minimum: 0, exclusiveMinimum: true },
+      },
+      required: ['name'],
+    };
+    const validator = new SchemaValidator();
+    expect(validator.validate('pipe', njs04, { name: 'A-1' })).toBeNull();
+    expect(validator.validate('pipe', njs04, { name: 'A-1', length: 0 })).not.toBeNull();
+    expect(validator.validate('pipe', njs04, { name: 'A-1', length: 0.5 })).toBeNull();
+    expect(validator.validate('pipe', njs04, {})).not.toBeNull();
+  });
 });
 
 describe('splitControlArgs', () => {

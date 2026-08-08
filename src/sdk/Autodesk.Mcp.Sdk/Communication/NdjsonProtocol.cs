@@ -16,7 +16,7 @@ public static class NdjsonProtocol
     /// <param name="cancellationToken">Cancellation token.</param>
     public static async Task<string?> ReadLineAsync(StreamReader reader, CancellationToken cancellationToken)
     {
-        string? line = await reader.ReadLineAsync(cancellationToken);
+        string? line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
         if (line is not null && line.Length > MaxMessageLength)
         {
             throw new ProtocolException("A wire message exceeded the maximum allowed length.");
@@ -36,6 +36,6 @@ public static class NdjsonProtocol
             throw new ProtocolException("A wire message exceeded the maximum allowed length.");
         }
 
-        await writer.WriteLineAsync(json.AsMemory(), cancellationToken);
+        await writer.WriteLineAsync(json.AsMemory(), cancellationToken).ConfigureAwait(false);
     }
 }

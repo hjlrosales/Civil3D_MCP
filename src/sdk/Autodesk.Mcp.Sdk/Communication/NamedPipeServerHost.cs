@@ -66,7 +66,7 @@ public sealed class NamedPipeServerHost : IAsyncDisposable
         {
             try
             {
-                await _acceptLoop;
+                await _acceptLoop.ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
@@ -80,7 +80,7 @@ public sealed class NamedPipeServerHost : IAsyncDisposable
 
         foreach (PipeConnection connection in _connections.Values)
         {
-            await connection.DisposeAsync();
+            await connection.DisposeAsync().ConfigureAwait(false);
         }
 
         _connections.Clear();
@@ -100,16 +100,16 @@ public sealed class NamedPipeServerHost : IAsyncDisposable
 
             try
             {
-                await server.WaitForConnectionAsync(cancellationToken);
+                await server.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
             {
-                await server.DisposeAsync();
+                await server.DisposeAsync().ConfigureAwait(false);
                 return;
             }
             catch (Exception ex)
             {
-                await server.DisposeAsync();
+                await server.DisposeAsync().ConfigureAwait(false);
                 _logger.LogWarning(ex, "Failed to accept a pipe connection.");
                 continue;
             }
@@ -127,7 +127,7 @@ public sealed class NamedPipeServerHost : IAsyncDisposable
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                RequestEnvelope? request = await connection.ReceiveAsync(cancellationToken);
+                RequestEnvelope? request = await connection.ReceiveAsync(cancellationToken).ConfigureAwait(false);
                 if (request is null)
                 {
                     break; // Client closed the pipe.
@@ -137,10 +137,10 @@ public sealed class NamedPipeServerHost : IAsyncDisposable
                     "Received '{Method}' (id {Id}, correlation {CorrelationId}, session {SessionId}).",
                     request.Method, request.Id, request.CorrelationId, request.SessionId);
 
-                ResponseEnvelope? response = await _router.HandleAsync(request, cancellationToken);
+                ResponseEnvelope? response = await _router.HandleAsync(request, cancellationToken).ConfigureAwait(false);
                 if (response is not null)
                 {
-                    await connection.SendAsync(response, cancellationToken);
+                    await connection.SendAsync(response, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
@@ -155,7 +155,7 @@ public sealed class NamedPipeServerHost : IAsyncDisposable
             {
                 await connection.SendAsync(
                     new ErrorEnvelope { ErrorCode = ErrorCode.E_INVALID_REQUEST, Message = ex.Message, CorrelationId = ex.CorrelationId },
-                    CancellationToken.None);
+                    CancellationToken.None).ConfigureAwait(false);
             }
             catch
             {
@@ -169,11 +169,11 @@ public sealed class NamedPipeServerHost : IAsyncDisposable
         finally
         {
             _connections.TryRemove(connection.ConnectionId, out _);
-            await connection.DisposeAsync();
+            await connection.DisposeAsync().ConfigureAwait(false);
             _logger.LogInformation("Connection {ConnectionId} closed.", connection.ConnectionId);
         }
     }
 
     /// <inheritdoc />
-    public async ValueTask DisposeAsync() => await StopAsync();
+    public async ValueTask DisposeAsync() => await StopAsync().ConfigureAwait(false);
 }

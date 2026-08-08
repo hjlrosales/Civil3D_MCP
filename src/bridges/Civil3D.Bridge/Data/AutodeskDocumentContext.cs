@@ -1,5 +1,6 @@
 using Autodesk.AutoCAD.ApplicationServices;
 using Autodesk.AutoCAD.DatabaseServices;
+using Civil3D.Bridge.Diagnostics;
 using Civil3D.Domain.Data;
 using Civil3D.Domain.Errors;
 using CoreApplication = Autodesk.AutoCAD.ApplicationServices.Core.Application;
@@ -22,6 +23,7 @@ public sealed class AutodeskDocumentContext : IAutodeskDocumentContext
     /// <inheritdoc />
     public T ExecuteRead<T>(Func<object, T> read, CancellationToken cancellationToken = default)
     {
+        Diag.Log("ExecuteRead: MdiActiveDocument access");
         Document? document = CoreApplication.DocumentManager.MdiActiveDocument;
         if (document is null)
         {

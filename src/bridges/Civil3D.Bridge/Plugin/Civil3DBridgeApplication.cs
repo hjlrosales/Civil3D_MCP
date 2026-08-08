@@ -3,6 +3,7 @@ using Autodesk.AutoCAD.Runtime;
 using Autodesk.Mcp.Sdk.Hosting;
 using Civil3D.Bridge.Configuration;
 using Civil3D.Bridge.DependencyInjection;
+using Civil3D.Bridge.Diagnostics;
 using Civil3D.Bridge.Execution;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,7 @@ public sealed class Civil3DBridgeApplication : IExtensionApplication
     /// <summary>Called by Civil 3D after the assembly is loaded (application context).</summary>
     public void Initialize()
     {
+        Diag.Log("Initialize() entered");
         try
         {
             _options = LoadConfiguration();
@@ -55,21 +57,43 @@ public sealed class Civil3DBridgeApplication : IExtensionApplication
         }
         catch (SysException ex)
         {
+            // Configuration is loaded before the logger is created from it, so a config failure
+            // used to be invisible: nothing was written to the bridge log and the alert showed
+            // only the outer message. Fall back to default settings so the failure is captured
+            // in the log, and surface the whole exception chain in the alert.
+            if (_options is null)
+            {
+                try
+                {
+                    Log.Logger = CreateSerilogLogger(new BridgeOptions());
+                }
+                catch
+                {
+                    // Even the fallback logger failed; the alert still carries the details.
+                }
+            }
+
             Log.Error(ex, "Civil 3D Bridge failed to initialize.");
-            try
-            {
-                Application.ShowAlertDialog($"Civil 3D Bridge failed to initialize. See the bridge log for details.\n\n{ex.Message}");
-            }
-            catch
-            {
-                // Best effort; the alert is informational only.
-            }
+            ShowFailureAlert(ex);
+        }
+    }
+
+    private static void ShowFailureAlert(SysException ex)
+    {
+        try
+        {
+            Application.ShowAlertDialog(FailureMessageBuilder.Build(ex));
+        }
+        catch
+        {
+            // Best effort; the alert is informational only.
         }
     }
 
     /// <summary>Called by Civil 3D during shutdown (application context).</summary>
     public void Terminate()
     {
+        Diag.Log("Terminate() entered");
         try
         {
             _host?.RequestShutdown();
@@ -101,13 +125,7 @@ public sealed class Civil3DBridgeApplication : IExtensionApplication
 
         BridgeOptions options = new();
         configuration.GetSection("bridge").Bind(options);
-        if (string.IsNullOrWhiteSpace(options.LogDirectory))
-        {
-            options.LogDirectory = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "AutodeskMcp",
-                "logs");
-        }
+        options.LogDirectory = ResolveLogDirectory(options.LogDirectory);
 
         if (string.IsNullOrWhiteSpace(options.PipeName))
         {
@@ -117,15 +135,28 @@ public sealed class Civil3DBridgeApplication : IExtensionApplication
         return options;
     }
 
+    private static string ResolveLogDirectory(string? logDirectory)
+    {
+        return string.IsNullOrWhiteSpace(logDirectory)
+            ? Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "AutodeskMcp",
+                "logs")
+            : logDirectory;
+    }
+
     private static Serilog.Core.Logger CreateSerilogLogger(BridgeOptions options)
     {
-        Directory.CreateDirectory(options.LogDirectory);
+        // Empty LogDirectory (for example when falling back to defaults because the config
+        // file could not be loaded) resolves to the standard %LOCALAPPDATA%\AutodeskMcp\logs.
+        string logDirectory = ResolveLogDirectory(options.LogDirectory);
+        Directory.CreateDirectory(logDirectory);
         return new LoggerConfiguration()
             .MinimumLevel.Information()
             .Enrich.WithProperty("Bridge", options.BridgeName)
             .Enrich.WithProperty("Pid", Environment.ProcessId)
             .WriteTo.File(
-                Path.Combine(options.LogDirectory, "civil3d-bridge-.log"),
+                Path.Combine(logDirectory, "civil3d-bridge-.log"),
                 rollingInterval: RollingInterval.Day,
                 retainedFileCountLimit: 14,
                 outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] ({Bridge}/{Pid}) {Message:lj}{NewLine}{Exception}")

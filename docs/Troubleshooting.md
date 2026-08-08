@@ -48,7 +48,16 @@ The server is running but has not connected to a bridge.
 ## Bridge failed to initialize (alert dialog in Civil 3D)
 
 The plugin throws during `Initialize()` - details go to `%LOCALAPPDATA%\AutodeskMcp\logs\`.
+The alert shows the full exception chain (root cause last), and failures are written to
+`civil3d-bridge-*.log` even when the bridge could not load its own configuration (a
+fallback logger with default settings is used in that case).
 
+- **`Failed to load configuration from file '<bundle>\Contents\Configuration\bridge.config.json'`**
+  The config file was missing, empty, or malformed when Civil 3D started - a bundle
+  copied while the build was still writing is the usual cause (the file ends up empty or
+  truncated). The inner exception shown in the dialog and the bridge log name the actual
+  problem (for example a JSON parse error). Verify the file parses as JSON, rebuild and
+  reinstall the bundle if needed, then restart Civil 3D.
 - **`Autodesk SDK not found at 'C:\Program Files\Autodesk\AutoCAD 2025'`**
   The bridge was built against a different AutoCAD path than the installed one. Set
   the `AutodeskAcadDir` MSBuild property when building the bundle:

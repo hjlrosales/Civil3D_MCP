@@ -32,7 +32,7 @@ public sealed class EndpointRegistrar : IEndpointRegistrar
     {
         Directory.CreateDirectory(_options.DirectoryPath);
         string fileName = Path.Combine(_options.DirectoryPath, $"{Sanitize(descriptor.Product)}-{descriptor.ProcessId}.json");
-        await WriteAsync(fileName, descriptor, cancellationToken);
+        await WriteAsync(fileName, descriptor, cancellationToken).ConfigureAwait(false);
         lock (_sync)
         {
             _fileName = fileName;
@@ -55,7 +55,7 @@ public sealed class EndpointRegistrar : IEndpointRegistrar
             return;
         }
 
-        await _gate.WaitAsync(cancellationToken);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (!File.Exists(fileName))
@@ -64,14 +64,14 @@ public sealed class EndpointRegistrar : IEndpointRegistrar
             }
 
             EndpointDescriptor? descriptor = JsonSerializer.Deserialize<EndpointDescriptor>(
-                await File.ReadAllTextAsync(fileName, cancellationToken),
+                await File.ReadAllTextAsync(fileName, cancellationToken).ConfigureAwait(false),
                 SharedJson.Options);
             if (descriptor is null)
             {
                 return;
             }
 
-            await WriteLockedAsync(fileName, descriptor with { LastHeartbeatAtUtc = timestamp });
+            await WriteLockedAsync(fileName, descriptor with { LastHeartbeatAtUtc = timestamp }).ConfigureAwait(false);
         }
         finally
         {
@@ -113,10 +113,10 @@ public sealed class EndpointRegistrar : IEndpointRegistrar
 
     private async Task WriteAsync(string fileName, EndpointDescriptor descriptor, CancellationToken cancellationToken)
     {
-        await _gate.WaitAsync(cancellationToken);
+        await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await WriteLockedAsync(fileName, descriptor);
+            await WriteLockedAsync(fileName, descriptor).ConfigureAwait(false);
         }
         finally
         {
@@ -125,7 +125,7 @@ public sealed class EndpointRegistrar : IEndpointRegistrar
     }
 
     private static async Task WriteLockedAsync(string fileName, EndpointDescriptor descriptor)
-        => await File.WriteAllTextAsync(fileName, JsonSerializer.Serialize(descriptor, SharedJson.Options));
+        => await File.WriteAllTextAsync(fileName, JsonSerializer.Serialize(descriptor, SharedJson.Options)).ConfigureAwait(false);
 
     private static string Sanitize(string product)
         => string.Concat(product.Select(c => char.IsAsciiLetterOrDigit(c) ? c : '-'));

@@ -117,7 +117,10 @@ function installToApplicationPlugins(sourceDir, bundleVersion) {
     console.warn('[bundle] %APPDATA% not set; skipping install.');
     return;
   }
-  const target = path.join(appData, 'Autodesk', 'ApplicationPlugins', `Civil3D.Bridge.Bundle-${bundleVersion}`);
+  // The Autodesk ApplicationPlugins loader only discovers folders whose name ends with
+  // '.bundle', so the installed folder must carry that suffix even though the build artifact
+  // folder and zip keep the plain `Civil3D.Bridge.Bundle-<version>` name.
+  const target = path.join(appData, 'Autodesk', 'ApplicationPlugins', `Civil3D.Bridge.Bundle-${bundleVersion}.bundle`);
   console.log(`[bundle] installing to ${target}`);
   rmSync(target, { recursive: true, force: true });
   cpSync(sourceDir, target, { recursive: true });

@@ -34,7 +34,7 @@ public sealed class PipeConnection : IAsyncDisposable
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task<RequestEnvelope?> ReceiveAsync(CancellationToken cancellationToken)
     {
-        string? line = await NdjsonProtocol.ReadLineAsync(_reader, cancellationToken);
+        string? line = await NdjsonProtocol.ReadLineAsync(_reader, cancellationToken).ConfigureAwait(false);
         if (line is null)
         {
             return null;
@@ -56,10 +56,10 @@ public sealed class PipeConnection : IAsyncDisposable
     public async Task SendAsync(object payload, CancellationToken cancellationToken)
     {
         string json = JsonSerializer.Serialize(payload, payload.GetType(), SharedJson.Options);
-        await _writeGate.WaitAsync(cancellationToken);
+        await _writeGate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            await NdjsonProtocol.WriteLineAsync(_writer, json, cancellationToken);
+            await NdjsonProtocol.WriteLineAsync(_writer, json, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -71,6 +71,6 @@ public sealed class PipeConnection : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         _writeGate.Dispose();
-        await _stream.DisposeAsync();
+        await _stream.DisposeAsync().ConfigureAwait(false);
     }
 }

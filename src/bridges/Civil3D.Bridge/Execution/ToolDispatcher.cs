@@ -8,6 +8,7 @@ using Autodesk.Mcp.Shared.Contracts;
 using Autodesk.Mcp.Shared.Dtos;
 using Autodesk.Mcp.Shared.Errors;
 using Autodesk.Mcp.Shared.Serialization;
+using Civil3D.Bridge.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Civil3D.Bridge.Execution;
@@ -151,9 +152,11 @@ public sealed class ToolDispatcher : IToolExecutor, IAsyncDisposable
                 Logger = _logger,
             };
 
+            Diag.Log("ExecuteOneAsync starting " + invocation.ToolName);
             object? result = tool.RequiresApplicationContext
                 ? await _applicationContext.ExecuteAsync(() => tool.ExecuteAsync(context, invocation.Parameters), item.EffectiveToken)
                 : await tool.ExecuteAsync(context, invocation.Parameters);
+            Diag.Log("ExecuteOneAsync finished " + invocation.ToolName);
 
             timer.Stop();
             _logger.LogInformation(

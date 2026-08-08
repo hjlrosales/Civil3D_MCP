@@ -54,8 +54,11 @@ public sealed class BridgeHost : IAsyncDisposable
             return;
         }
 
-        await _registrar.RegisterAsync(_info.CreateEndpointDescriptor(), cancellationToken);
-        await _pipeHost.StartAsync(cancellationToken);
+        // ConfigureAwait(false): the bridge runs inside acad.exe, whose single-threaded
+        // SynchronizationContext would otherwise capture continuations back to the blocked
+        // main thread (the plugin starts the host with GetAwaiter().GetResult()).
+        await _registrar.RegisterAsync(_info.CreateEndpointDescriptor(), cancellationToken).ConfigureAwait(false);
+        await _pipeHost.StartAsync(cancellationToken).ConfigureAwait(false);
         _started = true;
 
         _logger.LogInformation(
@@ -73,11 +76,11 @@ public sealed class BridgeHost : IAsyncDisposable
         }
 
         _started = false;
-        await _pipeHost.StopAsync();
-        await _registrar.DeleteAsync();
+        await _pipeHost.StopAsync().ConfigureAwait(false);
+        await _registrar.DeleteAsync().ConfigureAwait(false);
         _logger.LogInformation("Bridge '{BridgeName}' stopped.", _options.BridgeName);
     }
 
     /// <inheritdoc />
-    public async ValueTask DisposeAsync() => await StopAsync();
+    public async ValueTask DisposeAsync() => await StopAsync().ConfigureAwait(false);
 }
