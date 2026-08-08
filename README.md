@@ -73,4 +73,4 @@ Version `1.0.0-rc.1` (RC1) with the Phase 9 production-hardening work complete
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE).

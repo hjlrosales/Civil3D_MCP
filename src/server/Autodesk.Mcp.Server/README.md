@@ -53,4 +53,4 @@ Desktop, VS Code, Cursor and Cline live in
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE).
