@@ -90,8 +90,9 @@ jobs:
           if-no-files-found: error
 
   # Publishes the server to npm. The publish step is skipped when the NPM_TOKEN
-  # secret is not configured. (The secrets context is only available at step level,
-  # not in a job-level if, so the check lives on the step.)
+  # secret is not configured. The check lives inside the script (via the env var)
+  # rather than in an `if:` condition, because the secrets context is not reliably
+  # available in `if` expressions during workflow validation.
   npm-publish:
     name: Publish to npm
     needs: [node, dotnet-core]
@@ -105,11 +106,15 @@ jobs:
       - run: npm ci
         working-directory: src/server/Autodesk.Mcp.Server
       - name: Publish to npm (skipped when NPM_TOKEN is not configured)
-        if: ${{ secrets.NPM_TOKEN != '' }}
-        run: npm publish --provenance --access public
-        working-directory: src/server/Autodesk.Mcp.Server
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          if [ -n "$NODE_AUTH_TOKEN" ]; then
+            npm publish --provenance --access public
+          else
+            echo "NPM_TOKEN not configured - skipping npm publish"
+          fi
+        working-directory: src/server/Autodesk.Mcp.Server
 
   github-release:
     name: GitHub Release
