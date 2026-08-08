@@ -144,8 +144,9 @@ No configuration or data migration is required between RC2 and 1.0.0.
 
 To return to the previous release:
 
-1. `npm install -g autodesk-mcp-server@1.0.0-rc.2` (or the last known-good
-   version) and restart the client.
+1. `npm install -g autodesk-mcp-server@1.0.0-rc.1` (the last previously
+   published version; 1.0.0-rc.2 was validated but never published) and restart
+   the client.
 2. Restore the previous bridge bundle folder in
    `%APPDATA%\Autodesk\ApplicationPlugins\` and restart Civil 3D.
 3. Confirm `--version` reports the rolled-back version and tools/list works.

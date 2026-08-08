@@ -61,6 +61,13 @@ Zero warnings, zero errors.
 Bundle zip integrity (opens cleanly, contains PackageContents.xml with the
 correct AppVersion) - PASS.
 
+> **Manual validation pending**: the live-Civil-3D steps of the installation
+> validation (bundle install into `%APPDATA%\Autodesk\ApplicationPlugins`,
+> Civil 3D 2025/2026 start, endpoint registration, handshake, tools/list, and
+> representative read/edit/workflow execution) require a licensed Civil 3D host
+> and are executed per `docs/RELEASE-VALIDATION.md` - they are **not** part of
+> the automated gate.
+
 ### E2E results
 
 All 13 end-to-end tests pass: startup, handshake, discovery, execution,
@@ -74,7 +81,7 @@ shutdown, multi-instance bridge selection.
 | Artifact | Version | SHA-256 | Size (bytes) |
 | --- | --- | --- | --- |
 | Civil3D.Bridge.Bundle-1.0.0.zip | 1.0.0 | `29d72547d49fe5a23687f6f42ba314e537d51e7350ee096e504363029666e9c6` | 3,963,242 |
-| autodesk-mcp-server-1.0.0.tgz | 1.0.0 | `f801aa7097f9a30fc7b879ea4d5afad53d389e4ca8ae32880385b73582094d9c` | 27,921 |
+| autodesk-mcp-server-1.0.0.tgz | 1.0.0 | `b0f80b2b2b35a2f7394bf42cbf3b39bbc5012e1dae410a2899e1720577c24212` | 27,921 |
 
 Machine-readable manifest: `artifacts/release-manifest.json` (includes build
 UTC timestamps and platform `win32 x64`). Checksums: `artifacts/SHA256SUMS`.
@@ -112,7 +119,8 @@ and rollback): `docs/RELEASE-1.0.0.md`. Quick start: `docs/QuickStart.md`.
 ## Rollback
 
 To return to the previous release, reinstall the previous npm version
-(`npm install -g autodesk-mcp-server@1.0.0-rc.2`) and restore the previous
+(`npm install -g autodesk-mcp-server@1.0.0-rc.1`, the last previously published
+version - rc.2 was validated but never published) and restore the previous
 bridge bundle folder in `%APPDATA%\Autodesk\ApplicationPlugins\`. No state is
 persisted by the server or bridge beyond the auto-regenerated endpoint registry
 and log files, so rollback is safe. See `docs/RELEASE-1.0.0.md` (Rollback).

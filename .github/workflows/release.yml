@@ -130,9 +130,9 @@ jobs:
           name: civil3d-bridge-bundle
           path: artifacts/bridge
       - name: Build release manifest + checksums
-        run: |
-          node eng/scripts/release-manifest.mjs "${GITHUB_REF_NAME#v}"
-          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('artifacts/release-manifest.json','utf8')); fs.writeFileSync('artifacts/SHA256SUMS', m.artifacts.map(a=>a.sha256+'  '+a.filename).join('\n')+'\n');"
+        # The script scans the download dirs for the versioned artifact names and
+        # writes both artifacts/release-manifest.json and artifacts/SHA256SUMS.
+        run: node eng/scripts/release-manifest.mjs "${GITHUB_REF_NAME#v}" --server-dir artifacts/server --bundle-dir artifacts/bridge
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:

@@ -38,7 +38,8 @@
     "url": "https://github.com/your-org/autodesk-mcp-platform"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "clean": "node scripts/clean.mjs",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint src test --max-warnings 0",
     "lint:fix": "eslint src test --fix",
