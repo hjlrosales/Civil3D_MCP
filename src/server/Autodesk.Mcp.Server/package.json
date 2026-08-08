@@ -35,7 +35,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/autodesk-mcp-platform"
+    "url": "https://github.com/hjlrosales/Civil3D_MCP"
   },
   "scripts": {
     "clean": "node scripts/clean.mjs",

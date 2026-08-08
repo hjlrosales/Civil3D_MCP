@@ -118,4 +118,4 @@ Version tags: `v<major>.<minor>.<patch>[-<prerelease>]` (for example `v1.0.0-rc.
 - The server now reads its own version from `package.json` at runtime and reports it
   via `--version` and in the MCP `initialize` server info.
 
-[1.0.0-rc.1]: https://github.com/your-org/autodesk-mcp-platform/releases/tag/v1.0.0-rc.1
+[1.0.0-rc.1]: https://github.com/hjlrosales/Civil3D_MCP/releases/tag/v1.0.0-rc.1
