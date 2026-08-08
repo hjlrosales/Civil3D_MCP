@@ -29,8 +29,12 @@ if (version === undefined) {
 }
 
 function flagValue(name) {
-  const flag = args.find((a) => a.startsWith(name + '='));
-  return flag !== undefined ? flag.slice(name.length + 1) : undefined;
+  // Accept both `--flag=value` and `--flag value` forms.
+  const eq = args.find((a) => a.startsWith(name + '='));
+  if (eq !== undefined) return eq.slice(name.length + 1);
+  const idx = args.indexOf(name);
+  if (idx !== -1 && idx + 1 < args.length) return args[idx + 1];
+  return undefined;
 }
 
 const bundleFlag = flagValue('--bundle');
