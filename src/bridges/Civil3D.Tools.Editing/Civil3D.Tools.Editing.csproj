@@ -26,6 +26,7 @@
     <ProjectReference Include="..\..\domain\Civil3D.Domain.Commands\Civil3D.Domain.Commands.csproj" />
     <ProjectReference Include="..\..\domain\Civil3D.Domain.Alignments\Civil3D.Domain.Alignments.csproj" />
     <ProjectReference Include="..\..\domain\Civil3D.Domain.Surfaces\Civil3D.Domain.Surfaces.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Pipes\Civil3D.Domain.Pipes.csproj" />
   </ItemGroup>
 
   <Target Name="EnsureAutodeskSdk" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(AutodeskAcadDir)\acmgd.dll')">

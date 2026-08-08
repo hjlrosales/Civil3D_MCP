@@ -36,6 +36,10 @@ running and the client has discovered the tools.
 - "List the pipe networks and their parts (pipes + structures)."
 - "Summarize the storm network: total pipe length, structure count, and any pipes
   with inverted slopes."
+- "In the Storm network, create a horizontal 10 meter pipe, HDPE, 200 mm, SDR17,
+  PN10, starting at easting 1000, northing 2000, elevation 95.5." (requires
+  confirmation; the part is matched against the network's parts list, so the
+  network must already have a matching HDPE/SDR17/PN10 pipe part family)
 
 ## Quantities & earthwork
 
@@ -48,6 +52,7 @@ running and the client has discovered the tools.
 - "Create an alignment named 'Relief Route' along the polyline on layer 'ROAD-CL'."
 - "Rename alignment 'Old Name' to 'New Name'."
 - "Add a profile vertical curve to alignment 'Main Road' at station 1+250."
+- "Create a horizontal 10 m HDPE pipe, 200 mm SDR17 PN10, in the Storm network."
 
 ## Export
 

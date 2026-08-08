@@ -56,6 +56,7 @@ public class RenameIntegrationTests
 
         Assert.Contains("rename_alignment", names);
         Assert.Contains("rename_surface", names);
+        Assert.Contains("create_pipe", names);
         Autodesk.Mcp.Shared.Dtos.ToolManifest manifest = catalog.Manifests.Single(m => m.Name == "rename_alignment");
         Assert.Equal(Autodesk.Mcp.Shared.Enums.ToolPermission.ModifyDrawing, manifest.Permission);
     }

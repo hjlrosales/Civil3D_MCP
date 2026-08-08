@@ -48,7 +48,7 @@ internal static class CommandErrorMapper
                 ErrorCode.E_OBJECT_NOT_FOUND, ex.Message, context.CorrelationId, context.SessionId),
             DomainErrorCode.TransactionFailed => new BridgeException(
                 ErrorCode.E_TRANSACTION_FAILED, ex.Message, context.CorrelationId, context.SessionId),
-            DomainErrorCode.DuplicateName or DomainErrorCode.InvalidName => new BridgeException(
+            DomainErrorCode.DuplicateName or DomainErrorCode.InvalidName or DomainErrorCode.PartNotFound => new BridgeException(
                 ErrorCode.E_VALIDATION_FAILED, ex.Message, context.CorrelationId, context.SessionId),
             _ => new BridgeException(
                 ErrorCode.E_INTERNAL, "An internal error occurred while executing the command.",

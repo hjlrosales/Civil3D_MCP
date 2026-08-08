@@ -4,6 +4,9 @@ using Civil3D.Domain.Alignments.Repositories;
 using Civil3D.Domain.Alignments.Services;
 using Civil3D.Domain.Commands;
 using Civil3D.Domain.Commands.Transactions;
+using Civil3D.Domain.Pipes.Dtos;
+using Civil3D.Domain.Pipes.Repositories;
+using Civil3D.Domain.Pipes.Services;
 using Civil3D.Domain.Surfaces.Repositories;
 using Civil3D.Domain.Surfaces.Services;
 using Civil3D.Tools.Abstractions;
@@ -29,7 +32,8 @@ internal static class EditingTestHarness
         InMemoryDomainEventDispatcher Events,
         RecordingUndoContext Undo,
         RenameAlignmentTool AlignmentTool,
-        RenameSurfaceTool SurfaceTool);
+        RenameSurfaceTool SurfaceTool,
+        CreatePipeTool CreatePipeTool);
 
     internal static Container Create(
         InMemoryDrawing? drawing = null,
@@ -39,7 +43,15 @@ internal static class EditingTestHarness
     {
         drawing ??= new InMemoryDrawing(
             alignments: [(1, "Mainline"), (2, "Ramp A")],
-            surfaces: [(10, "EG"), (20, "FG")]);
+            surfaces: [(10, "EG"), (20, "FG")],
+            networks:
+            [
+                new InMemoryDrawing.FakeNetwork(
+                    100,
+                    "Storm",
+                    new InMemoryDrawing.FakePartFamily("HDPE SDR17 PN10 Pipe", 100, 150, 200, 250, 300),
+                    new InMemoryDrawing.FakePartFamily("PVC Pipe", 100, 150, 200)),
+            ]);
 
         var services = new ServiceCollection();
         var events = new InMemoryDomainEventDispatcher();
@@ -54,6 +66,9 @@ internal static class EditingTestHarness
         services.AddSingleton<ISurfaceService, SurfaceService>();
         services.AddSingleton<ISurfaceRenameRepository, FakeSurfaceRenameRepository>();
         services.AddSingleton<IRenameSurfaceService, RenameSurfaceService>();
+        services.AddSingleton<IPipeRepository, FakePipeRepository>();
+        services.AddSingleton<IPipeCreateRepository, FakePipeCreateRepository>();
+        services.AddSingleton<ICreatePipeService, CreatePipeService>();
         services.AddSingleton<IDomainEventDispatcher>(events);
         services.AddSingleton<IUndoContext>(undo);
         services.AddSingleton<ITransactionProvider>(sp => new FakeTransactionProvider(drawing));
@@ -79,6 +94,8 @@ internal static class EditingTestHarness
                     sp.GetRequiredService<IRenameSurfaceService>().Rename(transaction, id, newName, context)));
         services.AddTransient<ICommandValidator<RenameAlignmentCommand>, RenameAlignmentCommandValidator>();
         services.AddTransient<ICommandValidator<RenameSurfaceCommand>, RenameSurfaceCommandValidator>();
+        services.AddTransient<ICommandHandler<CreatePipeCommand, CreatePipeResult>, CreatePipeCommandHandler>();
+        services.AddTransient<ICommandValidator<CreatePipeCommand>, CreatePipeCommandValidator>();
 
         ServiceProvider provider = services.BuildServiceProvider();
         var tools = new Container(
@@ -97,6 +114,12 @@ internal static class EditingTestHarness
                 provider.GetRequiredService<ICivil3DSession>(),
                 provider.GetRequiredService<ICommandDispatcher>(),
                 provider.GetRequiredService<ISurfaceService>(),
+                provider.GetRequiredService<IConfirmationGate>(),
+                provider.GetRequiredService<IUndoContext>(),
+                requireConfirmation),
+            new CreatePipeTool(
+                provider.GetRequiredService<ICivil3DSession>(),
+                provider.GetRequiredService<ICommandDispatcher>(),
                 provider.GetRequiredService<IConfirmationGate>(),
                 provider.GetRequiredService<IUndoContext>(),
                 requireConfirmation));

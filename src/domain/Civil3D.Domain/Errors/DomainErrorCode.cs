@@ -20,6 +20,9 @@ public enum DomainErrorCode
     /// <summary>The requested name is invalid (empty, too long, or contains unsupported characters).</summary>
     InvalidName,
 
+    /// <summary>No pipe network part (family or size) matches the requested criteria, or the match is ambiguous.</summary>
+    PartNotFound,
+
     /// <summary>A read-only query against the Autodesk database failed.</summary>
     TransactionFailed,
 

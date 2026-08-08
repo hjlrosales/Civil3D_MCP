@@ -23,6 +23,7 @@ using Civil3D.Domain.Corridors.Repositories;
 using Civil3D.Domain.Corridors.Services;
 using Civil3D.Domain.Data;
 using Civil3D.Domain.Pipes.Data;
+using Civil3D.Domain.Pipes.Dtos;
 using Civil3D.Domain.Pipes.Repositories;
 using Civil3D.Domain.Pipes.Services;
 using Civil3D.Domain.Profiles.Data;
@@ -178,6 +179,14 @@ public static class BridgeServiceCollectionExtensions
                     sp.GetRequiredService<IRenameSurfaceService>().Rename(transaction, id, newName, context)));
         services.AddTransient<ICommandValidator<RenameAlignmentCommand>, RenameAlignmentCommandValidator>();
         services.AddTransient<ICommandValidator<RenameSurfaceCommand>, RenameSurfaceCommandValidator>();
+
+        // create_pipe (Phase 5C): the pipe create write repository and service, plus the command
+        // handler and structural validator. Reuses the read-only IPipeRepository registered above
+        // to confirm the target network exists before any Autodesk write is attempted.
+        services.AddSingleton<IPipeCreateRepository, AutodeskPipeCreateRepository>();
+        services.AddSingleton<ICreatePipeService, CreatePipeService>();
+        services.AddTransient<ICommandHandler<CreatePipeCommand, CreatePipeResult>, CreatePipeCommandHandler>();
+        services.AddTransient<ICommandValidator<CreatePipeCommand>, CreatePipeCommandValidator>();
 
         // Workflow framework (Phase 7A): the dispatcher pipeline, progress, timeout/cancellation
         // and events are infrastructure; handlers and validators for engineering workflows

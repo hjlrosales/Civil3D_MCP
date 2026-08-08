@@ -1,10 +1,11 @@
-# Autodesk MCP Platform — Editing Tools (Phase 5B)
+# Autodesk MCP Platform — Editing Tools (Phase 5B/5C)
 
 **Status:** Implemented
-**Date:** 2026-08-07
-**Scope:** The first production editing commands — `rename_alignment` and `rename_surface` —
-exercising the complete write pipeline end-to-end. This document is the standard reference for
-all future write operations.
+**Date:** 2026-08-09 (Phase 5C: `create_pipe` added)
+**Scope:** The first production editing commands — `rename_alignment` and `rename_surface`
+(Phase 5B), and the first *creation* command, `create_pipe` (Phase 5C) — exercising the complete
+write pipeline end-to-end. This document is the standard reference for all future write
+operations.
 
 ---
 
@@ -161,3 +162,56 @@ Services depend on the read repository (uniqueness), the write repository (renam
 
 Raw Autodesk exceptions never cross the protocol boundary — every failure is translated by
 `CommandErrorMapper` and `ReadOnlyRepositoryBase`/the write repository wrappers.
+
+---
+
+## 10. `create_pipe` (Phase 5C)
+
+The first *creation* command — as opposed to rename's in-place edit — follows the same pipeline
+shape but does not extend `RenameCommandBase`: `CreatePipeCommand` implements `ICommand<TResult>`
+directly, since its payload (network, part match, diameter, start/end geometry) doesn't fit the
+rename shape.
+
+```text
+MCP Tool (CreatePipeTool)                Civil3D.Tools.Editing
+  → CreatePipeRequest → CreatePipeCommand (endpoint computed from start + length + direction)
+CommandDispatcher (validation → permission → confirmation → progress)
+  → TransactionPipeline (begin → document lock → handler → commit | rollback)
+    → CreatePipeCommandHandler (undo unit)
+      → ICreatePipeService (network existence + PartCreated event)
+        → IPipeCreateRepository (Autodesk part resolution + Network.AddLinePipe)
+  → protocol response (CreatePipeResult)
+```
+
+**Part resolution** is the operation's one Autodesk-specific step, isolated entirely in
+`AutodeskPipeCreateRepository`:
+
+1. Open the target network for write (`Database.GetObjectId` + `Transaction.GetObject`, same
+   pattern as the rename repositories).
+2. Read the network's `PartsList` and call `GetPartFamilyIdsByDomain(DomainType.Pipe)` to get
+   every pipe part family already assigned to it.
+3. Match `CreatePipeSpecification.PartFamilyMatch` (case-insensitive substring) against each
+   family's `Description`. Zero or more-than-one matches throw `DomainException(PartNotFound, …)`
+   listing the available/ambiguous family descriptions — the tool never guesses.
+4. Call `Network.AddLinePipe(familyId, sizeId, line, ref newPipeId, applyRules: true)` with any
+   size from the matched family as the creation seed.
+5. Call `Pipe.ResizeByInnerDiameterOrWidth(diameterMeters, useClosestSize: true)` on the new pipe
+   — Civil 3D's own native snapping selects the closest size to the requested diameter, so the
+   repository never has to parse catalog size names.
+
+`CreatePipeTool` builds the default `PartFamilyMatch` from the discrete `Material`/`Sdr`/
+`PressureClassBar` request fields (for example `HDPE` + `17` + `10` → `"HDPE SDR17 PN10"`) unless
+the caller supplies an explicit override. The pipe is always **horizontal**: the tool computes the
+end point from `StartEasting`/`StartNorthing` + `LengthMeters` at `DirectionDegrees` (0 =
++Easting axis, counter-clockwise), holding elevation constant — sloped pipes are out of scope for
+this command.
+
+The network itself is never created implicitly — `create_pipe` requires an existing network name
+(discoverable via `list_pipe_networks`) and fails with `E_OBJECT_NOT_FOUND` otherwise, exactly
+like rename's `E_OBJECT_NOT_FOUND` for a missing alignment/surface id.
+
+| Failure | Domain code | Protocol code |
+|---|---|---|
+| Network missing | `EntityNotFound` | `E_OBJECT_NOT_FOUND` |
+| Empty network name / part match / non-positive diameter or length | validator | `E_VALIDATION_FAILED` |
+| No / ambiguous pipe part family match | `PartNotFound` | `E_VALIDATION_FAILED` |

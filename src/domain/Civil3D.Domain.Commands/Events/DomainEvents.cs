@@ -43,3 +43,12 @@ public sealed record TransactionRolledBack(string CommandName, string Correlatio
 /// <param name="CorrelationId">Correlation of the originating request.</param>
 /// <param name="SessionId">Session of the originating request, when present.</param>
 public sealed record ObjectRenamed(string ObjectType, long ObjectId, string PreviousName, string NewName, string CorrelationId, string? SessionId) : IDomainEvent;
+
+/// <summary>Published after a new part was added to a network in a committed write transaction.</summary>
+/// <param name="PartType">The part kind (for example "pipe" or "structure").</param>
+/// <param name="PartId">Stable numeric id of the created part.</param>
+/// <param name="NetworkId">Stable numeric id of the owning network.</param>
+/// <param name="Name">The auto-generated part name.</param>
+/// <param name="CorrelationId">Correlation of the originating request.</param>
+/// <param name="SessionId">Session of the originating request, when present.</param>
+public sealed record PartCreated(string PartType, long PartId, long NetworkId, string Name, string CorrelationId, string? SessionId) : IDomainEvent;
