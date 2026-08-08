@@ -55,11 +55,20 @@ created successfully and is live at `v1.0.0` (published 2026-08-08, not a
 prerelease) with all four assets: `autodesk-mcp-server-1.0.0.tgz`,
 `Civil3D.Bridge.Bundle-1.0.0.zip`, `release-manifest.json` and `SHA256SUMS`.
 
-> **Note**: an earlier push-triggered **CI** run (`31261449860`, same commit)
-> failed only in the `fresh-install` step of the Node job due to a missing
-> closing quote in `ci.yml` (`--tarball="$TARBALL`). This was a workflow-script
-> typo, not a product defect; it has been fixed (the quote is now closed) so
-> subsequent push CI runs pass. The release pipeline itself was unaffected.
+> **Note on push-triggered CI** (not the release pipeline): the push CI
+> (`ci.yml`) has two pre-existing issues that do not affect the tagged Release
+> workflow (which is the source of the run results above):
+>
+> 1. The Node `fresh-install` step used bash syntax (`--tarball="$TARBALL`,
+>    missing closing quote; `$(ls ...)`, `head`) while `windows-latest` defaults
+>    to PowerShell. This is a workflow-script typo, not a product defect; it has
+>    been fixed (the quote is closed and the step pins `shell: bash`).
+> 2. The `.NET (core)` job builds `AutodeskMcp.Core.slnx` on a GitHub-hosted
+>    runner, but that solution includes SDK-dependent projects (discipline
+>    domains, `Civil3D.Tools.*`) that require the Autodesk SDK - it only builds
+>    where the SDK is installed (the Release workflow runs this job on the
+>    self-hosted Civil 3D runner, where it passes). See `docs/DeveloperGuide.md`
+>    for the runner requirement.
 
 ### Packaging results
 

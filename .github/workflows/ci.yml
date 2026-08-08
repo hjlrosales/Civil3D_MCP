@@ -53,6 +53,9 @@ jobs:
           npm pack --pack-destination "${{ github.workspace }}/artifacts/packages"
         working-directory: src/server/Autodesk.Mcp.Server
       - name: Fresh-install validation
+        # Bash syntax (command substitution, head) - the default Windows runner
+        # shell is PowerShell, so pin bash explicitly.
+        shell: bash
         run: |
           TARBALL=$(ls "${{ github.workspace }}/artifacts/packages"/*.tgz | head -1)
           node eng/scripts/validate-fresh-install.mjs --server --tarball="$TARBALL"
