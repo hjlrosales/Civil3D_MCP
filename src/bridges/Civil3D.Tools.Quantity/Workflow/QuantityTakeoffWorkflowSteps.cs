@@ -1,0 +1,214 @@
+using Civil3D.Domain.Alignments.Services;
+using Civil3D.Domain.Cogo.Services;
+using Civil3D.Domain.Corridors.Services;
+using Civil3D.Domain.Pipes.Services;
+using Civil3D.Domain.Profiles.Services;
+using Civil3D.Domain.Styles.Services;
+using Civil3D.Domain.Surfaces.Services;
+using System.Diagnostics;
+using Civil3D.Domain.Workflows;
+using Civil3D.Tools.Abstractions;
+using Civil3D.Tools.Quantity.Analysis;
+using Civil3D.Tools.Quantity.Dtos;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+namespace Civil3D.Tools.Quantity.Workflow;
+
+/// <summary>
+/// The five stages of the quantity-takeoff workflow. Steps resolve their domain services from the
+/// workflow context (never Autodesk APIs), report progress and honour cancellation between
+/// reads. The dispatcher's completion milestone is the sixth spec stage, "Complete".
+/// </summary>
+internal sealed class ValidateInputStep : IWorkflowStep
+{
+    /// <inheritdoc />
+    public string Name => "Validate Input";
+
+    /// <inheritdoc />
+    public Task<WorkflowStepOutcome> ExecuteAsync(IWorkflowContext context, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        context.Progress.Report(context.Progress.PercentComplete, Name, "Input validated.");
+        return Task.FromResult(WorkflowStepOutcome.Proceed("Input validated."));
+    }
+}
+
+/// <summary>Collects the active drawing snapshot and the lightweight drawing statistics.</summary>
+internal sealed class CollectDrawingInformationStep(QuantityTakeoffWorkflowState state) : IWorkflowStep
+{
+    /// <inheritdoc />
+    public string Name => "Collect Drawing Information";
+
+    /// <inheritdoc />
+    public Task<WorkflowStepOutcome> ExecuteAsync(IWorkflowContext context, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var session = context.Services.GetRequiredService<ICivil3DSession>();
+        var statistics = context.Services.GetRequiredService<IDrawingStatisticsService>();
+
+        ActiveDrawing drawing = session.GetActiveDrawing()
+            ?? throw new WorkflowException(
+                WorkflowErrorCode.InvalidParameters,
+                "No active drawing is available to measure.");
+
+        state.Drawing = drawing;
+        state.Statistics = statistics.GetStatistics(drawing, cancellationToken);
+
+        context.Progress.Report(context.Progress.PercentComplete, Name, $"Drawing '{drawing.DrawingName}' collected.");
+        return Task.FromResult(WorkflowStepOutcome.Proceed($"Drawing '{drawing.DrawingName}' collected."));
+    }
+}
+
+/// <summary>Materializes every domain collection through the existing read-only domain services.</summary>
+internal sealed class CollectDomainDataStep(QuantityTakeoffWorkflowState state) : IWorkflowStep
+{
+    /// <inheritdoc />
+    public string Name => "Collect Domain Data";
+
+    /// <inheritdoc />
+    public Task<WorkflowStepOutcome> ExecuteAsync(IWorkflowContext context, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        IServiceProvider services = context.Services;
+
+        state.Alignments = services.GetRequiredService<IAlignmentService>().GetAll().Items;
+        cancellationToken.ThrowIfCancellationRequested();
+        state.Profiles = services.GetRequiredService<IProfileService>().GetAll().Items;
+        cancellationToken.ThrowIfCancellationRequested();
+        state.Surfaces = services.GetRequiredService<ISurfaceService>().GetAll().Items;
+        cancellationToken.ThrowIfCancellationRequested();
+        state.Corridors = services.GetRequiredService<ICorridorService>().GetAll().Items;
+        cancellationToken.ThrowIfCancellationRequested();
+        state.PipeNetworks = services.GetRequiredService<IPipeService>().GetAll().Items;
+        cancellationToken.ThrowIfCancellationRequested();
+        state.CogoPoints = services.GetRequiredService<ICogoService>().GetAll().Items;
+        cancellationToken.ThrowIfCancellationRequested();
+        state.Styles = services.GetRequiredService<IStyleService>().GetAll().Items;
+
+        int objectCount = state.ObjectCount();
+        context.Logger.LogInformation(
+            "Workflow {Workflow} step {Step} collected {Count} objects (correlation {CorrelationId}, session {SessionId}).",
+            context.WorkflowName, Name, objectCount, context.CorrelationId, context.SessionId);
+        context.Progress.Report(context.Progress.PercentComplete, Name, $"{objectCount} objects collected.");
+        return Task.FromResult(WorkflowStepOutcome.Proceed("Domain data collected."));
+    }
+}
+
+/// <summary>Runs the pure <see cref="QuantityCalculator"/> over the collected data.</summary>
+internal sealed class CalculateQuantitiesStep(QuantityTakeoffWorkflowState state) : IWorkflowStep
+{
+    /// <inheritdoc />
+    public string Name => "Calculate Quantities";
+
+    /// <inheritdoc />
+    public Task<WorkflowStepOutcome> ExecuteAsync(IWorkflowContext context, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var data = new QuantityData
+        {
+            Drawing = state.Drawing
+                ?? throw new WorkflowException(
+                    WorkflowErrorCode.InvalidParameters, "Drawing information was not collected."),
+            Statistics = state.Statistics,
+            Alignments = state.Alignments,
+            Profiles = state.Profiles,
+            Surfaces = state.Surfaces,
+            Corridors = state.Corridors,
+            PipeNetworks = state.PipeNetworks,
+            CogoPoints = state.CogoPoints,
+            Styles = state.Styles,
+        };
+
+        var timer = Stopwatch.StartNew();
+        state.Result = QuantityCalculator.Calculate(data);
+        timer.Stop();
+        context.Logger.LogInformation(
+            "Workflow {Workflow} step {Step} produced {Count} quantity item(s) across {Categories} "
+            + "categor(ies) in {Elapsed} ms (correlation {CorrelationId}, session {SessionId}).",
+            context.WorkflowName, Name, state.Result.Items.Count, state.Result.Summaries.Count,
+            timer.ElapsedMilliseconds, context.CorrelationId, context.SessionId);
+        context.Progress.Report(
+            context.Progress.PercentComplete, Name,
+            $"{state.Result.Items.Count} quantity item(s) calculated.");
+        return Task.FromResult(WorkflowStepOutcome.Proceed($"{state.Result.Items.Count} quantity item(s)."));
+    }
+}
+
+/// <summary>
+/// Progress/logging milestone for the aggregation stage. The calculator already produced the
+/// per-category summaries in <see cref="CalculateQuantitiesStep"/>; this step reports the stage
+/// and logs the roll-up counts so callers see the spec's "Aggregate Results" stage.
+/// </summary>
+internal sealed class AggregateResultsStep(QuantityTakeoffWorkflowState state) : IWorkflowStep
+{
+    /// <inheritdoc />
+    public string Name => "Aggregate Results";
+
+    /// <inheritdoc />
+    public Task<WorkflowStepOutcome> ExecuteAsync(IWorkflowContext context, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var result = state.Result
+            ?? throw new WorkflowException(WorkflowErrorCode.InvalidParameters, "Quantities were not calculated.");
+
+        context.Logger.LogInformation(
+            "Workflow {Workflow} step {Step} aggregated {Count} categor(ies) covering {Items} item(s) "
+            + "(correlation {CorrelationId}, session {SessionId}).",
+            context.WorkflowName, Name, result.Summaries.Count, result.Items.Count,
+            context.CorrelationId, context.SessionId);
+        context.Progress.Report(
+            context.Progress.PercentComplete, Name, $"{result.Summaries.Count} categor(ies) aggregated.");
+        return Task.FromResult(WorkflowStepOutcome.Proceed("Results aggregated."));
+    }
+}
+
+/// <summary>Composes the final report from the collected data, calculation and execution summary.</summary>
+internal sealed class GenerateReportStep(QuantityTakeoffWorkflowState state, int totalSteps) : IWorkflowStep
+{
+    /// <inheritdoc />
+    public string Name => "Generate Report";
+
+    /// <inheritdoc />
+    public Task<WorkflowStepOutcome> ExecuteAsync(IWorkflowContext context, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var result = state.Result
+            ?? throw new WorkflowException(WorkflowErrorCode.InvalidParameters, "Quantities were not calculated.");
+
+        DateTimeOffset finishedAtUtc = DateTimeOffset.UtcNow;
+        state.Report = new QuantityTakeoffReport
+        {
+            Overview = result.Overview,
+            Items = result.Items,
+            Summaries = result.Summaries,
+            Statistics = result.Statistics,
+            Execution = new WorkflowExecutionSummary
+            {
+                WorkflowName = context.WorkflowName,
+                StartedAtUtc = context.StartedAtUtc,
+                FinishedAtUtc = finishedAtUtc,
+                Elapsed = finishedAtUtc - context.StartedAtUtc,
+                TotalSteps = totalSteps,
+                CompletedSteps = totalSteps,
+            },
+        };
+
+        context.Progress.Report(context.Progress.PercentComplete, Name, "Report generated.");
+        return Task.FromResult(WorkflowStepOutcome.Proceed("Report generated."));
+    }
+}
+
+/// <summary>Counts the materialized domain objects held by the state.</summary>
+internal static class QuantityTakeoffWorkflowStateExtensions
+{
+    /// <summary>The total number of domain objects collected so far.</summary>
+    public static int ObjectCount(this QuantityTakeoffWorkflowState state)
+        => state.Alignments.Count + state.Profiles.Count + state.Surfaces.Count
+           + state.Corridors.Count + state.PipeNetworks.Count + state.CogoPoints.Count
+           + state.Styles.Count;
+}

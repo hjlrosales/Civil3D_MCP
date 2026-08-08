@@ -1,0 +1,22 @@
+{
+  "$comment": "Sample Civil3D.Bridge configuration. Place this file at <bundle>/Contents/Configuration/bridge.config.json. All keys are optional - defaults are shown. Loaded from the \"bridge\" section only.",
+  "bridge": {
+    "bridgeName": "Civil3D.Bridge",
+    "product": "Civil3D",
+    "productVersion": "2025",
+    "bridgeVersion": "1.0.0",
+    "sdkVersion": "1.0.0",
+
+    "pipeName": "",
+    "maxConcurrentConnections": 8,
+    "supportedProducts": [ "Civil3D" ],
+
+    "logDirectory": "",
+    "supportsStreaming": false,
+    "supportsProgress": false,
+    "supportsCancellation": true,
+    "supportsConfirmation": false,
+    "supportsBatchRequests": false,
+    "supportsParallelExecution": false
+  }
+}

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>Civil3D.Tools.Surface.Tests</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\bridges\Civil3D.Bridge\Civil3D.Bridge.csproj" />
+    <ProjectReference Include="..\..\src\bridges\Civil3D.Tools.Abstractions\Civil3D.Tools.Abstractions.csproj" />
+    <ProjectReference Include="..\..\src\bridges\Civil3D.Tools.Surface\Civil3D.Tools.Surface.csproj" />
+    <ProjectReference Include="..\..\src\bridges\Civil3D.Tools.Workflows\Civil3D.Tools.Workflows.csproj" />
+    <ProjectReference Include="..\..\src\domain\Civil3D.Domain\Civil3D.Domain.csproj" />
+    <ProjectReference Include="..\..\src\domain\Civil3D.Domain.Commands\Civil3D.Domain.Commands.csproj" />
+    <ProjectReference Include="..\..\src\domain\Civil3D.Domain.Surfaces\Civil3D.Domain.Surfaces.csproj" />
+    <ProjectReference Include="..\..\src\domain\Civil3D.Domain.Workflows\Civil3D.Domain.Workflows.csproj" />
+    <ProjectReference Include="..\..\src\sdk\Autodesk.Mcp.Sdk\Autodesk.Mcp.Sdk.csproj" />
+    <ProjectReference Include="..\..\src\shared\Autodesk.Mcp.Shared\Autodesk.Mcp.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

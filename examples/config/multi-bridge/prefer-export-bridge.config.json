@@ -1,0 +1,14 @@
+{
+  "$comment": "Example: in a mixed environment (Civil 3D + a hypothetical Export bridge), prefer the Export bridge for this server instance while still falling back to Civil 3D.",
+  "logLevel": "info",
+  "endpointsDir": "C:\\Users\\you\\AppData\\Local\\AutodeskMcp\\endpoints",
+  "preferredProduct": "Civil3D",
+  "preferredBridge": "Export.Bridge",
+  "reconnectDelayMs": 1000,
+  "maxReconnectAttempts": 10,
+  "requestTimeoutMs": 30000,
+  "heartbeatIntervalMs": 15000,
+  "endpointsPollIntervalMs": 3000,
+  "clientName": "Autodesk.MCP.Server",
+  "clientVersion": "1.0.0-rc.1"
+}

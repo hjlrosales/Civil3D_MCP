@@ -1,0 +1,7 @@
+{"level":30,"time":1754150400000,"pid":12345,"hostname":"WORKSTATION","component":"autodesk-mcp-server","msg":"Autodesk MCP Server 1.0.0-rc.1 starting (protocol 1.0.0, client Autodesk.MCP.Server 1.0.0-rc.1)."}
+{"level":30,"time":1754150400021,"pid":12345,"hostname":"WORKSTATION","component":"autodesk-mcp-server","msg":"Monitoring endpoints in C:\\Users\\you\\AppData\\Local\\AutodeskMcp\\endpoints."}
+{"level":30,"time":1754150400033,"pid":12345,"hostname":"WORKSTATION","component":"autodesk-mcp-server","msg":"Bridge status changed to connected."}
+{"level":30,"time":1754150400041,"pid":12345,"hostname":"WORKSTATION","component":"autodesk-mcp-server","msg":"Tool drawing_info succeeded (correlation 6f8c4e2a-9c1d-4f5a-8b3e-2a1f0c7d9e01)."}
+{"level":30,"time":1754150400120,"pid":12345,"hostname":"WORKSTATION","component":"autodesk-mcp-server","msg":"Tool calculate_cut_fill completed in 812 ms (correlation a9b2c3d4-e5f6-4789-8a1b-2c3d4e5f6a7b)."}
+{"level":40,"time":1754150400500,"pid":12345,"hostname":"WORKSTATION","component":"autodesk-mcp-server","msg":"Tool rename_alignment failed with E_CONFIRMATION_REQUIRED: Confirmation required for this editing operation. (correlation 1b2c3d4e-5f6a-4b7c-8d9e-0f1a2b3c4d5e)."}
+{"level":50,"time":1754150400800,"pid":12345,"hostname":"WORKSTATION","component":"autodesk-mcp-server","msg":"Bridge status changed to disconnected."}

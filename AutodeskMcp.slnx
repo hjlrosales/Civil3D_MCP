@@ -1,9 +1,61 @@
 <Solution>
   <Folder Name="/src/" />
+  <Folder Name="/src/bridges/">
+    <Project Path="src/bridges/Civil3D.Bridge/Civil3D.Bridge.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Abstractions/Civil3D.Tools.Abstractions.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Commands/Civil3D.Tools.Commands.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Drawing/Civil3D.Tools.Drawing.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Editing/Civil3D.Tools.Editing.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Query/Civil3D.Tools.Query.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Workflows/Civil3D.Tools.Workflows.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Health/Civil3D.Tools.Health.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Project/Civil3D.Tools.Project.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Validation/Civil3D.Tools.Validation.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Quantity/Civil3D.Tools.Quantity.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Surface/Civil3D.Tools.Surface.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.CutFill/Civil3D.Tools.CutFill.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Corridor/Civil3D.Tools.Corridor.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Export/Civil3D.Tools.Export.csproj" />
+  </Folder>
+  <Folder Name="/src/domain/">
+    <Project Path="src/domain/Civil3D.Domain/Civil3D.Domain.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Commands/Civil3D.Domain.Commands.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Query/Civil3D.Domain.Query.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Alignments/Civil3D.Domain.Alignments.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Surfaces/Civil3D.Domain.Surfaces.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Profiles/Civil3D.Domain.Profiles.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Corridors/Civil3D.Domain.Corridors.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Pipes/Civil3D.Domain.Pipes.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Cogo/Civil3D.Domain.Cogo.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Styles/Civil3D.Domain.Styles.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Workflows/Civil3D.Domain.Workflows.csproj" />
+  </Folder>
+  <Folder Name="/src/sdk/">
+    <Project Path="src/sdk/Autodesk.Mcp.Sdk/Autodesk.Mcp.Sdk.csproj" />
+  </Folder>
   <Folder Name="/src/shared/">
     <Project Path="src/shared/Autodesk.Mcp.Shared/Autodesk.Mcp.Shared.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/Autodesk.Mcp.Sdk.Tests/Autodesk.Mcp.Sdk.Tests.csproj" />
     <Project Path="tests/Autodesk.Mcp.Shared.Tests/Autodesk.Mcp.Shared.Tests.csproj" />
+    <Project Path="tests/Civil3D.Bridge.Tests/Civil3D.Bridge.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Drawing.Tests/Civil3D.Tools.Drawing.Tests.csproj" />
+    <Project Path="tests/Civil3D.Domain.Tests/Civil3D.Domain.Tests.csproj" />
+    <Project Path="tests/Civil3D.Domain.Commands.Tests/Civil3D.Domain.Commands.Tests.csproj" />
+    <Project Path="tests/Civil3D.Domain.Query.Tests/Civil3D.Domain.Query.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Commands.Tests/Civil3D.Tools.Commands.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Editing.Tests/Civil3D.Tools.Editing.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Query.Tests/Civil3D.Tools.Query.Tests.csproj" />
+    <Project Path="tests/Civil3D.Domain.Workflows.Tests/Civil3D.Domain.Workflows.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Workflows.Tests/Civil3D.Tools.Workflows.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Health.Tests/Civil3D.Tools.Health.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Project.Tests/Civil3D.Tools.Project.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Validation.Tests/Civil3D.Tools.Validation.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Quantity.Tests/Civil3D.Tools.Quantity.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Surface.Tests/Civil3D.Tools.Surface.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.CutFill.Tests/Civil3D.Tools.CutFill.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Corridor.Tests/Civil3D.Tools.Corridor.Tests.csproj" />
+    <Project Path="tests/Civil3D.Tools.Export.Tests/Civil3D.Tools.Export.Tests.csproj" />
   </Folder>
 </Solution>

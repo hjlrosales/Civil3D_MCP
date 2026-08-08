@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    Quality gates enforced for every project under src/:
+    - every compiler warning becomes an error,
+    - .NET analyzers run at the latest level.
+  -->
+
+  <PropertyGroup>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+
+</Project>

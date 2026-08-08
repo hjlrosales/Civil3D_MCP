@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>Civil3D.Tools.Surface</RootNamespace>
+    <AssemblyName>Civil3D.Tools.Surface</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <NuGetAudit>false</NuGetAudit>
+    <IsPackable>false</IsPackable>
+    <Description>Production engineering workflow (Phase 7F): the read-only surface_comparison_report workflow. Contains the surface comparison DTOs, the pure comparison engine, the workflow orchestration over the surface domain service and the MCP tool. No Autodesk references.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\sdk\Autodesk.Mcp.Sdk\Autodesk.Mcp.Sdk.csproj" />
+    <ProjectReference Include="..\..\shared\Autodesk.Mcp.Shared\Autodesk.Mcp.Shared.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Abstractions\Civil3D.Tools.Abstractions.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Workflows\Civil3D.Tools.Workflows.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain\Civil3D.Domain.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Commands\Civil3D.Domain.Commands.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Workflows\Civil3D.Domain.Workflows.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Surfaces\Civil3D.Domain.Surfaces.csproj" />
+  </ItemGroup>
+
+</Project>

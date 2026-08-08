@@ -1,0 +1,9 @@
+{
+  "$comment": "Cursor: Cursor Settings > MCP > Add new MCP server, or put this in .cursor/mcp.json in your project. Cursor reads the mcpServers key.",
+  "mcpServers": {
+    "autodesk-mcp": {
+      "command": "npx",
+      "args": ["-y", "autodesk-mcp-server"]
+    }
+  }
+}

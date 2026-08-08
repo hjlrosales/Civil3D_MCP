@@ -1,0 +1,94 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>Civil3D.Bridge</RootNamespace>
+    <AssemblyName>Civil3D.Bridge</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <NuGetAudit>false</NuGetAudit>
+    <!-- Autodesk managed assemblies ship with mixed dependency versions; MSB3277 is expected for plugins. -->
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
+    <AutodeskAcadDir Condition="'$(AutodeskAcadDir)' == ''">$(ProgramFiles)\Autodesk\AutoCAD 2025</AutodeskAcadDir>
+    <Description>Civil 3D Bridge plugin: hosts the Autodesk MCP bridge inside Civil 3D (NETLOAD).</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="9.0.0" />
+    <PackageReference Include="Serilog" Version="4.2.0" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\sdk\Autodesk.Mcp.Sdk\Autodesk.Mcp.Sdk.csproj" />
+    <ProjectReference Include="..\..\shared\Autodesk.Mcp.Shared\Autodesk.Mcp.Shared.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain\Civil3D.Domain.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Commands\Civil3D.Domain.Commands.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Alignments\Civil3D.Domain.Alignments.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Surfaces\Civil3D.Domain.Surfaces.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Profiles\Civil3D.Domain.Profiles.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Corridors\Civil3D.Domain.Corridors.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Pipes\Civil3D.Domain.Pipes.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Cogo\Civil3D.Domain.Cogo.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Styles\Civil3D.Domain.Styles.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Workflows\Civil3D.Domain.Workflows.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Abstractions\Civil3D.Tools.Abstractions.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Commands\Civil3D.Tools.Commands.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Drawing\Civil3D.Tools.Drawing.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Editing\Civil3D.Tools.Editing.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Query\Civil3D.Tools.Query.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Workflows\Civil3D.Tools.Workflows.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Health\Civil3D.Tools.Health.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Project\Civil3D.Tools.Project.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Validation\Civil3D.Tools.Validation.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Quantity\Civil3D.Tools.Quantity.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Surface\Civil3D.Tools.Surface.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.CutFill\Civil3D.Tools.CutFill.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Corridor\Civil3D.Tools.Corridor.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Export\Civil3D.Tools.Export.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(AutodeskAcadDir)\acmgd.dll')">
+    <Reference Include="AcMgd">
+      <HintPath>$(AutodeskAcadDir)\acmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcDbMgd">
+      <HintPath>$(AutodeskAcadDir)\acdbmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcCoreMgd">
+      <HintPath>$(AutodeskAcadDir)\accoremgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(AutodeskAcadDir)\C3D\AeccDbMgd.dll')">
+    <Reference Include="AeccDbMgd">
+      <HintPath>$(AutodeskAcadDir)\C3D\AeccDbMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Configuration\bridge.config.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <Target Name="EnsureAutodeskSdk" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(AutodeskAcadDir)\acmgd.dll')">
+    <Error Text="Autodesk SDK not found at '$(AutodeskAcadDir)'. Set the AutodeskAcadDir MSBuild property to the AutoCAD 2025 install folder." />
+  </Target>
+
+</Project>

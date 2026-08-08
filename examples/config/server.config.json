@@ -1,0 +1,14 @@
+{
+  "$comment": "Sample Autodesk.MCP.Server configuration. Pass it with --config <path> or $AUTODESK_MCP_CONFIG. Every option is optional; defaults are shown.",
+  "logLevel": "info",
+  "endpointsDir": "C:\\Users\\you\\AppData\\Local\\AutodeskMcp\\endpoints",
+  "preferredProduct": "Civil3D",
+  "preferredBridge": "Civil3D.Bridge",
+  "reconnectDelayMs": 1000,
+  "maxReconnectAttempts": 10,
+  "requestTimeoutMs": 30000,
+  "heartbeatIntervalMs": 15000,
+  "endpointsPollIntervalMs": 3000,
+  "clientName": "Autodesk.MCP.Server",
+  "clientVersion": "1.0.0"
+}

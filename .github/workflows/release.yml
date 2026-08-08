@@ -1,0 +1,146 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  id-token: write # for npm provenance
+
+jobs:
+  node:
+    name: Node (server) - build & pack
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/server/Autodesk.Mcp.Server/package-lock.json
+      - run: npm ci
+        working-directory: src/server/Autodesk.Mcp.Server
+      - run: npm run typecheck
+        working-directory: src/server/Autodesk.Mcp.Server
+      - run: npm run lint
+        working-directory: src/server/Autodesk.Mcp.Server
+      - run: npm test
+        working-directory: src/server/Autodesk.Mcp.Server
+      - run: npm run build
+        working-directory: src/server/Autodesk.Mcp.Server
+      - run: |
+          mkdir -p "${{ github.workspace }}/artifacts/packages"
+          npm pack --pack-destination "${{ github.workspace }}/artifacts/packages"
+        working-directory: src/server/Autodesk.Mcp.Server
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-package
+          path: artifacts/packages/*.tgz
+          if-no-files-found: error
+
+  dotnet-core:
+    name: .NET (core)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build AutodeskMcp.Core.slnx -c Release --nologo
+      - run: dotnet test AutodeskMcp.Core.slnx -c Release --nologo --no-build
+
+  e2e:
+    name: E2E (real server process)
+    needs: node
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/server/Autodesk.Mcp.Server/package-lock.json
+      - run: npm ci
+        working-directory: src/server/Autodesk.Mcp.Server
+      - run: npm run build
+        working-directory: src/server/Autodesk.Mcp.Server
+      - run: npm ci
+        working-directory: e2e
+      - run: npm test
+        working-directory: e2e
+
+  # Bridge bundle + full .NET suite. Requires a self-hosted Windows runner labeled
+  # 'civil3d' with Civil 3D installed (Autodesk SDK). See docs/DeveloperGuide.md.
+  bridge:
+    name: Bridge bundle (Civil 3D SDK runner)
+    runs-on: [self-hosted, windows, civil3d]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - run: dotnet build AutodeskMcp.slnx -c Release --nologo
+      - run: dotnet test AutodeskMcp.slnx -c Release --nologo
+      - run: node eng/scripts/build-bridge-bundle.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: civil3d-bridge-bundle
+          path: artifacts/bundles/
+          if-no-files-found: error
+
+  # Publishes the server to npm. Skipped when the NPM_TOKEN secret is not configured.
+  npm-publish:
+    name: Publish to npm
+    needs: [node, dotnet-core]
+    if: ${{ secrets.NPM_TOKEN != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+        working-directory: src/server/Autodesk.Mcp.Server
+      - run: npm publish --provenance --access public
+        working-directory: src/server/Autodesk.Mcp.Server
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  github-release:
+    name: GitHub Release
+    needs: [node, dotnet-core, e2e, bridge]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate release notes
+        run: node eng/scripts/release-notes.mjs "${GITHUB_REF_NAME#v}"
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: server-package
+          path: artifacts/server
+      - uses: actions/download-artifact@v4
+        with:
+          name: civil3d-bridge-bundle
+          path: artifacts/bridge
+      - name: Build release manifest + checksums
+        run: |
+          node eng/scripts/release-manifest.mjs "${GITHUB_REF_NAME#v}"
+          node -e "const fs=require('fs'); const m=JSON.parse(fs.readFileSync('artifacts/release-manifest.json','utf8')); fs.writeFileSync('artifacts/SHA256SUMS', m.artifacts.map(a=>a.sha256+'  '+a.filename).join('\n')+'\n');"
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: artifacts/release-notes/${{ github.ref_name }}.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          files: |
+            artifacts/server/*.tgz
+            artifacts/bridge/**/*.zip
+            artifacts/release-manifest.json
+            artifacts/SHA256SUMS

@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Civil3D.Domain.Query</RootNamespace>
+    <AssemblyName>Civil3D.Domain.Query</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <NuGetAudit>false</NuGetAudit>
+    <IsPackable>false</IsPackable>
+    <Description>Reusable read-only query framework for every Civil 3D MCP tool: query requests, filters, sorting, pagination, field selection, search, and the QueryEngine that applies them. Contains no Autodesk references.</Description>
+  </PropertyGroup>
+
+</Project>

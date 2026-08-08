@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Civil3D.Tools.Workflows</RootNamespace>
+    <AssemblyName>Civil3D.Tools.Workflows</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <NuGetAudit>false</NuGetAudit>
+    <IsPackable>false</IsPackable>
+    <Description>Tool-layer infrastructure for long-running engineering workflows (Phase 7A): WorkflowToolBase binds an MCP tool to a workflow and runs it through the IWorkflowDispatcher pipeline, and maps WorkflowException/DomainException to protocol error codes. Contains no production workflows and no Autodesk references.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\sdk\Autodesk.Mcp.Sdk\Autodesk.Mcp.Sdk.csproj" />
+    <ProjectReference Include="..\..\shared\Autodesk.Mcp.Shared\Autodesk.Mcp.Shared.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Abstractions\Civil3D.Tools.Abstractions.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Commands\Civil3D.Domain.Commands.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Workflows\Civil3D.Domain.Workflows.csproj" />
+  </ItemGroup>
+
+</Project>

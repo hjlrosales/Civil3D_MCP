@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Autodesk Application Bundle manifest for the Civil3D.Bridge plugin.
+
+  Copied verbatim into the release bundle by eng/scripts/build-bridge-bundle.mjs.
+  The AppVersion attribute is synchronized from eng/version.json by
+  eng/scripts/sync-version.mjs - do not edit it by hand.
+-->
+<ApplicationPackage
+    SchemaVersion="1.0.0"
+    AutodeskProduct="Civil 3D"
+    ProductType="Application"
+    Name="Autodesk MCP Bridge for Civil 3D"
+    AppVersion="1.0.0"
+    Description="Hosts the Autodesk MCP bridge inside Autodesk Civil 3D 2025/2026. Loads automatically, publishes a local named-pipe endpoint and serves the tool catalog to Autodesk.MCP.Server."
+    Author="Autodesk MCP Platform contributors"
+    OnlineDocumentation="https://github.com/your-org/autodesk-mcp-platform/blob/main/docs/Installation.md">
+  <Components>
+    <!-- Civil 3D 2025 = R24.3, 2026 = R25.0. -->
+    <RuntimeRequirements OS="Win64" Platform="AutoCAD" SeriesMin="R24.3" SeriesMax="R25.0" />
+    <ComponentEntry
+        AppName="Civil3D.Bridge"
+        ModuleName="./Contents/Civil3D.Bridge.dll"
+        AppType=".NET"
+        LoadOnAutoCADStartup="True"
+        LoadOnCommandInvocation="False" />
+  </Components>
+</ApplicationPackage>

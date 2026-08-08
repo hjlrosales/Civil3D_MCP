@@ -1,0 +1,32 @@
+<Project>
+
+  <!--
+    Central version metadata for every C# project in the repository.
+
+    The values below are the SINGLE source of truth for .NET assembly/product
+    versions and are regenerated automatically from eng/version.json by:
+
+        node eng/scripts/sync-version.mjs
+
+    Do not edit them by hand in a release - run the sync script instead.
+  -->
+
+  <PropertyGroup>
+    <Version>1.0.0</Version>
+    <AssemblyVersion>1.0.0</AssemblyVersion>
+    <FileVersion>1.0.0</FileVersion>
+    <InformationalVersion>1.0.0</InformationalVersion>
+
+    <Authors>Autodesk MCP Platform contributors</Authors>
+    <Company>Autodesk MCP Platform</Company>
+    <Product>Autodesk MCP Platform</Product>
+    <Copyright>Copyright (c) 2026 Autodesk MCP Platform contributors</Copyright>
+    <RepositoryUrl>https://github.com/your-org/autodesk-mcp-platform</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <NuGetAudit>false</NuGetAudit>
+  </PropertyGroup>
+
+</Project>

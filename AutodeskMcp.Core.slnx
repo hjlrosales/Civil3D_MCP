@@ -1,0 +1,43 @@
+<Solution>
+  <!--
+    Core solution: every project that builds WITHOUT the Autodesk SDK.
+    Excluded on purpose: Civil3D.Bridge and Civil3D.Tools.Drawing (reference acmgd/aeccdbmgd).
+    Used by CI and the quality gate on runners without Civil 3D installed.
+  -->
+  <Folder Name="/src/">
+    <Project Path="src/shared/Autodesk.Mcp.Shared/Autodesk.Mcp.Shared.csproj" />
+    <Project Path="src/sdk/Autodesk.Mcp.Sdk/Autodesk.Mcp.Sdk.csproj" />
+    <Project Path="src/domain/Civil3D.Domain/Civil3D.Domain.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Commands/Civil3D.Domain.Commands.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Query/Civil3D.Domain.Query.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Alignments/Civil3D.Domain.Alignments.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Surfaces/Civil3D.Domain.Surfaces.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Profiles/Civil3D.Domain.Profiles.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Corridors/Civil3D.Domain.Corridors.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Pipes/Civil3D.Domain.Pipes.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Cogo/Civil3D.Domain.Cogo.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Styles/Civil3D.Domain.Styles.csproj" />
+    <Project Path="src/domain/Civil3D.Domain.Workflows/Civil3D.Domain.Workflows.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Abstractions/Civil3D.Tools.Abstractions.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Commands/Civil3D.Tools.Commands.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Corridor/Civil3D.Tools.Corridor.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.CutFill/Civil3D.Tools.CutFill.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Editing/Civil3D.Tools.Editing.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Export/Civil3D.Tools.Export.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Health/Civil3D.Tools.Health.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Project/Civil3D.Tools.Project.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Quantity/Civil3D.Tools.Quantity.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Query/Civil3D.Tools.Query.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Surface/Civil3D.Tools.Surface.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Validation/Civil3D.Tools.Validation.csproj" />
+    <Project Path="src/bridges/Civil3D.Tools.Workflows/Civil3D.Tools.Workflows.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Autodesk.Mcp.Shared.Tests/Autodesk.Mcp.Shared.Tests.csproj" />
+    <Project Path="tests/Autodesk.Mcp.Sdk.Tests/Autodesk.Mcp.Sdk.Tests.csproj" />
+    <Project Path="tests/Civil3D.Domain.Tests/Civil3D.Domain.Tests.csproj" />
+    <Project Path="tests/Civil3D.Domain.Commands.Tests/Civil3D.Domain.Commands.Tests.csproj" />
+    <Project Path="tests/Civil3D.Domain.Query.Tests/Civil3D.Domain.Query.Tests.csproj" />
+    <Project Path="tests/Civil3D.Domain.Workflows.Tests/Civil3D.Domain.Workflows.Tests.csproj" />
+  </Folder>
+</Solution>

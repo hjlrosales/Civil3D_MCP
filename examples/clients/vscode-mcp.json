@@ -1,0 +1,11 @@
+{
+  "$comment": "VS Code: save as .vscode/mcp.json in your workspace (or use the MCP extension UI), then reload the window. The servers key is what the VS Code MCP extension expects.",
+  "servers": {
+    "autodesk-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "autodesk-mcp-server"],
+      "env": {}
+    }
+  }
+}

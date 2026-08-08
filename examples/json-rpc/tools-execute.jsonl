@@ -1,0 +1,2 @@
+{"method":"tools/execute","id":3,"params":{"tool":"drawing_info","arguments":{}},"correlationId":"6f8c4e2a-9c1d-4f5a-8b3e-2a1f0c7d9e01","sessionId":"sess-1","timeoutMilliseconds":30000,"clientRequestedAtUtc":"2026-08-08T09:15:02.240Z"}
+{"success":true,"message":"","executionTime":8,"errorCode":"","correlationId":"6f8c4e2a-9c1d-4f5a-8b3e-2a1f0c7d9e01","sessionId":"sess-1","data":{"fileName":"Project-042.dwg","path":"C:\\Projects\\Site42\\Project-042.dwg","units":"meters","objects":{"alignments":12,"surfaces":3,"corridors":1,"pipeNetworks":2}}}

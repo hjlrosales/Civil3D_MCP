@@ -1,0 +1,5 @@
+{"method":"tools/execute","id":6,"params":{"tool":"calculate_cut_fill","arguments":{"existingSurface":"EG","proposedSurface":"FG"}},"correlationId":"a9b2c3d4-e5f6-4789-8a1b-2c3d4e5f6a7b","sessionId":"sess-1","timeoutMilliseconds":120000,"clientRequestedAtUtc":"2026-08-08T09:15:10.000Z"}
+{"method":"$/progress","params":{"correlationId":"a9b2c3d4-e5f6-4789-8a1b-2c3d4e5f6a7b","sessionId":"sess-1","toolName":"calculate_cut_fill","percent":10,"stage":"Sampling surfaces","message":"Building grid over extents","timestampUtc":"2026-08-08T09:15:10.300Z"}}
+{"method":"$/progress","params":{"correlationId":"a9b2c3d4-e5f6-4789-8a1b-2c3d4e5f6a7b","sessionId":"sess-1","toolName":"calculate_cut_fill","percent":60,"stage":"Computing volumes","message":"","timestampUtc":"2026-08-08T09:15:10.800Z"}}
+{"method":"$/cancel","params":{"correlationId":"a9b2c3d4-e5f6-4789-8a1b-2c3d4e5f6a7b","reason":"User cancelled from the client."}}
+{"success":false,"message":"The operation was cancelled.","executionTime":810,"errorCode":"E_CANCELLED","correlationId":"a9b2c3d4-e5f6-4789-8a1b-2c3d4e5f6a7b","sessionId":"sess-1"}

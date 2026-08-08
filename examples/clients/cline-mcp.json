@@ -1,0 +1,9 @@
+{
+  "$comment": "Cline: add via Cline > MCP Servers > Configure MCP Servers > Add, then paste the mcpServers block.",
+  "mcpServers": {
+    "autodesk-mcp": {
+      "command": "npx",
+      "args": ["-y", "autodesk-mcp-server"]
+    }
+  }
+}

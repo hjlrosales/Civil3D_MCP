@@ -1,0 +1,35 @@
+# ---- Build outputs (C# / .NET) ----
+bin/
+obj/
+*.user
+*.suo
+
+# ---- Node.js ----
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# ---- Release artifacts ----
+artifacts/
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- Test / coverage reports ----
+TestResults/
+benchmarks/**/results/
+
+# ---- IDE / OS ----
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/mcp.json
+*.swp
+.DS_Store
+Thumbs.db
+
+# ---- npm tarballs ----
+*.tgz

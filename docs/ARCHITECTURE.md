@@ -1,8 +1,8 @@
-# Autodesk MCP Platform — Architecture (Phase 1)
+# Autodesk MCP Platform — Architecture
 
-**Status:** Draft for approval
-**Date:** 2026-08-07
-**Scope:** Overall architecture, solution structure, technology decisions, sequence diagrams.
+**Status:** Release Candidate 1 (`1.0.0-rc.1`)
+**Date:** 2026-08-08 (Phase 8 update)
+**Scope:** Overall architecture, solution structure, technology decisions, sequence diagrams, packaging and release engineering.
 
 ---
 
@@ -379,13 +379,73 @@ sequenceDiagram
 
 ---
 
-## 7. Phase Plan (unchanged from the brief)
+## 7. Phase Plan
 
-1. **Phase 1** — this document. ⟵ *awaiting approval*
-2. **Phase 2** — Shared: contracts, DTOs, error codes, serialization tests.
-3. **Phase 3** — SDK + Civil3D.Bridge skeleton: lifecycle, pipe host, dispatcher.
-4. **Phase 4** — Autodesk.MCP.Server: pipe client, registry, manifest loader, MCP wiring.
-5. **Phase 5** — Read-only tools (drawing, layers, listings, reports).
-6. **Phase 6** — Editing tools (transactions, confirmation flow).
-7. **Phase 7** — Engineering workflow tools.
-8. **Phase 8** — Tests, documentation, packaging (bundle + npm), release build.
+1. **Phase 1** — Architecture. ✅
+2. **Phase 2** — Shared: contracts, DTOs, error codes, serialization tests. ✅
+3. **Phase 3** — SDK + Civil3D.Bridge skeleton: lifecycle, pipe host, dispatcher. ✅
+4. **Phase 4** — Autodesk.MCP.Server: pipe client, registry, manifest loader, MCP wiring. ✅
+5. **Phase 5** — Read-only tools (drawing, layers, listings, reports). ✅
+6. **Phase 6** — Editing tools (transactions, confirmation flow). ✅
+7. **Phase 7** — Engineering workflow tools. ✅
+8. **Phase 8** — Packaging, release engineering, CI/CD, benchmarks, E2E. ⟵ **current (RC1)**
+
+---
+
+## 8. Packaging & Release Engineering (Phase 8)
+
+### 8.1 Deliverables layout
+
+```
+autodesk-mcp-platform/
+├── .github/workflows/         CI (quality gates) + release pipeline
+├── packaging/Civil3D.Bridge.Bundle/PackageContents.xml
+├── eng/
+│   ├── version.json           single source of truth (SemVer)
+│   └── scripts/               sync-version, release-notes, build-bridge-bundle, quality-gate
+├── benchmarks/                .NET benchmark harness + Node (vitest bench) suite
+├── e2e/                       real-process end-to-end MCP tests
+├── examples/                  client configs, prompts, workflows, JSON-RPC samples
+├── docs/                      installation, configuration, troubleshooting, release process, …
+└── artifacts/                 (gitignored) packages, bundles, release notes
+```
+
+### 8.2 Versioning
+
+- `eng/version.json` holds the single SemVer (currently `1.0.0-rc.1`).
+- `eng/scripts/sync-version.mjs` propagates it to `Directory.Build.props` (all C#
+  assemblies), the npm `package.json`, the bundle `PackageContents.xml` and the
+  sample/shipped configuration files.
+- Git release tags use `v<semver>` (e.g. `v1.0.0-rc.1`). Releases are cut from tags
+  by `release.yml`; see `docs/ReleaseProcess.md`.
+
+### 8.3 Bridge packaging (Autodesk Application Bundle)
+
+- `eng/scripts/build-bridge-bundle.mjs` publishes `Civil3D.Bridge` in Release and
+  assembles an autoload bundle (`PackageContents.xml` + `Contents/`) plus a zip.
+- Per-user install: copy the bundle folder into
+  `%APPDATA%\Autodesk\ApplicationPlugins\` (or `--install` flag). The Autodesk
+  plugin loader then NETLOADs the bridge automatically on Civil 3D startup.
+- `PackageContents.xml` `AppVersion` is version-synced; `RuntimeRequirements`
+  targets AutoCAD R24.3–R25.0 (Civil 3D 2025/2026).
+
+### 8.4 Server packaging (npm)
+
+- `autodesk-mcp-server` is published from `src/server/Autodesk.Mcp.Server`;
+  `prepack` runs typecheck + build, `files` ships only `dist/` + `README.md`.
+- The CLI (`dist/index.js`, shebang included) supports `-c/--config`,
+  `-V/--version`, `-h/--help`; version is read from `package.json` at runtime.
+
+### 8.5 Quality gates
+
+Every CI run verifies: restore, build (warnings-as-errors for .NET; strict
+TypeScript + ESLint for the server), all unit/integration tests, formatting
+(`dotnet format --verify-no-changes`), packaging (`npm pack`, bundle assembly),
+benchmarks on demand and the real-process E2E suite. See `docs/DeveloperGuide.md`.
+
+### 8.6 Autodesk SDK coupling in CI
+
+Only `Civil3D.Bridge` and `Civil3D.Tools.Drawing` reference Autodesk assemblies,
+so cloud CI builds/tests everything else; the bridge build + bundle assembly runs
+on a self-hosted Windows runner labeled `civil3d` (or locally). See
+`docs/DeveloperGuide.md` and `.github/workflows/ci.yml`.

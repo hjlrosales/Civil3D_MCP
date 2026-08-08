@@ -1,0 +1,27 @@
+{
+  "name": "autodesk-mcp-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monorepo orchestration for the Autodesk MCP Platform (Civil3D.Bridge + Autodesk.MCP.Server).",
+  "license": "MIT",
+  "scripts": {
+    "install:server": "npm --prefix src/server/Autodesk.Mcp.Server install",
+    "build:server": "npm --prefix src/server/Autodesk.Mcp.Server run build",
+    "typecheck:server": "npm --prefix src/server/Autodesk.Mcp.Server run typecheck",
+    "lint:server": "npm --prefix src/server/Autodesk.Mcp.Server run lint",
+    "test:server": "npm --prefix src/server/Autodesk.Mcp.Server test",
+    "pack:server": "npm pack ./src/server/Autodesk.Mcp.Server --pack-destination artifacts/packages",
+    "test:e2e": "npm --prefix e2e test",
+    "bench:server": "npm --prefix src/server/Autodesk.Mcp.Server run bench",
+    "bench:dotnet": "dotnet run --project benchmarks/Autodesk.Mcp.Benchmarks -c Release",
+    "build:bridge": "node eng/scripts/build-bridge-bundle.mjs",
+    "sync:version": "node eng/scripts/sync-version.mjs",
+    "release:notes": "node eng/scripts/release-notes.mjs",
+    "quality": "node eng/scripts/quality-gate.mjs",
+    "quality:check": "node eng/scripts/quality-gate.mjs --verify-only",
+    "validate:install": "node eng/scripts/validate-fresh-install.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

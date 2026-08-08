@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>Civil3D.Tools.Drawing</RootNamespace>
+    <AssemblyName>Civil3D.Tools.Drawing</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <NuGetAudit>false</NuGetAudit>
+    <!-- Autodesk managed assemblies ship with mixed dependency versions; MSB3277 is expected for plugins. -->
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
+    <AutodeskAcadDir Condition="'$(AutodeskAcadDir)' == ''">$(ProgramFiles)\Autodesk\AutoCAD 2025</AutodeskAcadDir>
+    <Description>Civil 3D Drawing tools: drawing_info and drawing_summary, plus their Autodesk service implementations. The first production tool assembly; every future Civil3D.Tools.* assembly follows this pattern.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\sdk\Autodesk.Mcp.Sdk\Autodesk.Mcp.Sdk.csproj" />
+    <ProjectReference Include="..\..\shared\Autodesk.Mcp.Shared\Autodesk.Mcp.Shared.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Abstractions\Civil3D.Tools.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(AutodeskAcadDir)\acmgd.dll')">
+    <Reference Include="AcMgd">
+      <HintPath>$(AutodeskAcadDir)\acmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcDbMgd">
+      <HintPath>$(AutodeskAcadDir)\acdbmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcCoreMgd">
+      <HintPath>$(AutodeskAcadDir)\accoremgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(AutodeskAcadDir)\C3D\AeccDbMgd.dll')">
+    <Reference Include="AeccDbMgd">
+      <HintPath>$(AutodeskAcadDir)\C3D\AeccDbMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <Target Name="EnsureAutodeskSdk" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(AutodeskAcadDir)\acmgd.dll')">
+    <Error Text="Autodesk SDK not found at '$(AutodeskAcadDir)'. Set the AutodeskAcadDir MSBuild property to the AutoCAD 2025 install folder." />
+  </Target>
+
+</Project>

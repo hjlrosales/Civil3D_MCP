@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>Civil3D.Domain.Pipes</RootNamespace>
+    <AssemblyName>Civil3D.Domain.Pipes</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <NuGetAudit>false</NuGetAudit>
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
+    <AutodeskAcadDir Condition="'$(AutodeskAcadDir)' == ''">$(ProgramFiles)\Autodesk\AutoCAD 2025</AutodeskAcadDir>
+    <Description>Civil 3D domain layer: pipe networks discipline. Immutable DTOs, read-only repository and service, and the Autodesk data source. No MCP references.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Civil3D.Domain\Civil3D.Domain.csproj" />
+    <ProjectReference Include="../Civil3D.Domain.Query/Civil3D.Domain.Query.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(AutodeskAcadDir)\acmgd.dll')">
+    <Reference Include="AcMgd">
+      <HintPath>$(AutodeskAcadDir)\acmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcDbMgd">
+      <HintPath>$(AutodeskAcadDir)\acdbmgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="AcCoreMgd">
+      <HintPath>$(AutodeskAcadDir)\accoremgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(AutodeskAcadDir)\ACA\AecBaseMgd.dll')">
+    <Reference Include="AecBaseMgd">
+      <HintPath>$(AutodeskAcadDir)\ACA\AecBaseMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup Condition="Exists('$(AutodeskAcadDir)\C3D\AeccDbMgd.dll')">
+    <Reference Include="AeccDbMgd">
+      <HintPath>$(AutodeskAcadDir)\C3D\AeccDbMgd.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <RootNamespace>Civil3D.Tools.Editing</RootNamespace>
+    <AssemblyName>Civil3D.Tools.Editing</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+    <NuGetAudit>false</NuGetAudit>
+    <!-- Autodesk managed assemblies ship with mixed dependency versions; MSB3277 is expected for plugins. -->
+    <MSBuildWarningsAsMessages>MSB3277</MSBuildWarningsAsMessages>
+    <AutodeskAcadDir Condition="'$(AutodeskAcadDir)' == ''">$(ProgramFiles)\Autodesk\AutoCAD 2025</AutodeskAcadDir>
+    <Description>First production editing tools (Phase 5B): rename_alignment and rename_surface, bound to the command framework (CommandToolBase). Thin orchestration; all Autodesk access lives in the domain layer's write repositories.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\sdk\Autodesk.Mcp.Sdk\Autodesk.Mcp.Sdk.csproj" />
+    <ProjectReference Include="..\..\shared\Autodesk.Mcp.Shared\Autodesk.Mcp.Shared.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Abstractions\Civil3D.Tools.Abstractions.csproj" />
+    <ProjectReference Include="..\Civil3D.Tools.Commands\Civil3D.Tools.Commands.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Commands\Civil3D.Domain.Commands.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Alignments\Civil3D.Domain.Alignments.csproj" />
+    <ProjectReference Include="..\..\domain\Civil3D.Domain.Surfaces\Civil3D.Domain.Surfaces.csproj" />
+  </ItemGroup>
+
+  <Target Name="EnsureAutodeskSdk" BeforeTargets="ResolveAssemblyReferences" Condition="!Exists('$(AutodeskAcadDir)\acmgd.dll')">
+    <Error Text="Autodesk SDK not found at '$(AutodeskAcadDir)'. Set the AutodeskAcadDir MSBuild property to the AutoCAD 2025 install folder." />
+  </Target>
+
+</Project>

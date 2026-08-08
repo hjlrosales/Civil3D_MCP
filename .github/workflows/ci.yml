@@ -1,0 +1,128 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast version-drift guard: fails when any versioned file falls out of sync.
+  version-drift:
+    name: Version drift check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node eng/scripts/quality-gate.mjs --verify-only
+
+  # Node quality gate: restore -> typecheck -> lint -> test -> build -> package.
+  node:
+    name: Node (server)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/server/Autodesk.Mcp.Server/package-lock.json
+      - name: Restore
+        run: npm ci
+        working-directory: src/server/Autodesk.Mcp.Server
+      - name: Typecheck
+        run: npm run typecheck
+        working-directory: src/server/Autodesk.Mcp.Server
+      - name: Lint
+        run: npm run lint
+        working-directory: src/server/Autodesk.Mcp.Server
+      - name: Test
+        run: npm test
+        working-directory: src/server/Autodesk.Mcp.Server
+      - name: Build
+        run: npm run build
+        working-directory: src/server/Autodesk.Mcp.Server
+      - name: Pack (publishable tarball)
+        run: |
+          mkdir -p "${{ github.workspace }}/artifacts/packages"
+          npm pack --pack-destination "${{ github.workspace }}/artifacts/packages"
+        working-directory: src/server/Autodesk.Mcp.Server
+      - name: Fresh-install validation
+        run: |
+          TARBALL=$(ls "${{ github.workspace }}/artifacts/packages"/*.tgz | head -1)
+          node eng/scripts/validate-fresh-install.mjs --server --tarball="$TARBALL
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-package
+          path: artifacts/packages/*.tgz
+          if-no-files-found: error
+
+  # .NET quality gate on the core solution (everything that builds without the Autodesk SDK).
+  dotnet:
+    name: .NET (core)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Restore + build (warnings as errors)
+        run: dotnet build AutodeskMcp.Core.slnx -c Release --nologo
+      - name: Test
+        run: dotnet test AutodeskMcp.Core.slnx -c Release --nologo --no-build
+      - name: Formatting
+        run: dotnet format AutodeskMcp.Core.slnx --verify-no-changes --no-restore
+
+  # End-to-end: spawns the real server binary and drives it over stdio MCP.
+  e2e:
+    name: E2E (real server process)
+    needs: node
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/server/Autodesk.Mcp.Server/package-lock.json
+      - name: Restore server
+        run: npm ci
+        working-directory: src/server/Autodesk.Mcp.Server
+      - name: Build server
+        run: npm run build
+        working-directory: src/server/Autodesk.Mcp.Server
+      - name: Restore e2e
+        run: npm ci
+        working-directory: e2e
+      - name: Run e2e
+        run: npm test
+        working-directory: e2e
+
+  # Bridge quality gate. Requires a self-hosted Windows runner labeled 'civil3d'
+  # with Civil 3D (Autodesk SDK) installed. Runs only for version tags so PRs are
+  # never blocked on runner availability. See docs/DeveloperGuide.md.
+  bridge:
+    name: Bridge (Civil 3D SDK runner)
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: [self-hosted, windows, civil3d]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build (full solution incl. bridge)
+        run: dotnet build AutodeskMcp.slnx -c Release --nologo
+      - name: Test
+        run: dotnet test AutodeskMcp.slnx -c Release --nologo
+      - name: Assemble bundle
+        run: node eng/scripts/build-bridge-bundle.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: civil3d-bridge-bundle
+          path: artifacts/bundles/
+          if-no-files-found: error
