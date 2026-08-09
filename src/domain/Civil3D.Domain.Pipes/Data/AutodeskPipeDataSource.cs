@@ -75,12 +75,29 @@ public sealed class AutodeskPipeDataSource : IPipeDataSource
                 Name = pipe.Name,
                 Description = string.IsNullOrWhiteSpace(pipe.Description) ? null : pipe.Description,
                 NetworkId = networkId,
-                StartStation = pipe.StartStation,
-                EndStation = pipe.EndStation,
+                // Stations are measured along an alignment/profile; a standalone pipe created
+                // without one (for example by create_pipe) has no station context and the getters
+                // throw. Fall back to 0 so a network with such pipes can still be listed.
+                StartStation = ReadStation(() => pipe.StartStation),
+                EndStation = ReadStation(() => pipe.EndStation),
             });
         }
 
         return pipes;
+    }
+
+    private static double ReadStation(Func<double> read)
+    {
+        try
+        {
+            return read();
+        }
+        catch (Exception)
+        {
+            // No alignment/profile context for this pipe (see the caller); Civil 3D throws
+            // System.InvalidOperationException from the station getters for standalone pipes.
+            return 0;
+        }
     }
 
     private static IReadOnlyList<StructureInfo> ReadStructures(Transaction transaction, Network network, CancellationToken cancellationToken)

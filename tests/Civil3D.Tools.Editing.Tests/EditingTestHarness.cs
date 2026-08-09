@@ -33,7 +33,8 @@ internal static class EditingTestHarness
         RecordingUndoContext Undo,
         RenameAlignmentTool AlignmentTool,
         RenameSurfaceTool SurfaceTool,
-        CreatePipeTool CreatePipeTool);
+        CreatePipeTool CreatePipeTool,
+        CreatePipeNetworkTool CreatePipeNetworkTool);
 
     internal static Container Create(
         InMemoryDrawing? drawing = null,
@@ -69,6 +70,8 @@ internal static class EditingTestHarness
         services.AddSingleton<IPipeRepository, FakePipeRepository>();
         services.AddSingleton<IPipeCreateRepository, FakePipeCreateRepository>();
         services.AddSingleton<ICreatePipeService, CreatePipeService>();
+        services.AddSingleton<IPipeNetworkCreateRepository, FakePipeNetworkCreateRepository>();
+        services.AddSingleton<ICreatePipeNetworkService, CreatePipeNetworkService>();
         services.AddSingleton<IDomainEventDispatcher>(events);
         services.AddSingleton<IUndoContext>(undo);
         services.AddSingleton<ITransactionProvider>(sp => new FakeTransactionProvider(drawing));
@@ -96,6 +99,8 @@ internal static class EditingTestHarness
         services.AddTransient<ICommandValidator<RenameSurfaceCommand>, RenameSurfaceCommandValidator>();
         services.AddTransient<ICommandHandler<CreatePipeCommand, CreatePipeResult>, CreatePipeCommandHandler>();
         services.AddTransient<ICommandValidator<CreatePipeCommand>, CreatePipeCommandValidator>();
+        services.AddTransient<ICommandHandler<CreatePipeNetworkCommand, CreatePipeNetworkResult>, CreatePipeNetworkCommandHandler>();
+        services.AddTransient<ICommandValidator<CreatePipeNetworkCommand>, CreatePipeNetworkCommandValidator>();
 
         ServiceProvider provider = services.BuildServiceProvider();
         var tools = new Container(
@@ -118,6 +123,12 @@ internal static class EditingTestHarness
                 provider.GetRequiredService<IUndoContext>(),
                 requireConfirmation),
             new CreatePipeTool(
+                provider.GetRequiredService<ICivil3DSession>(),
+                provider.GetRequiredService<ICommandDispatcher>(),
+                provider.GetRequiredService<IConfirmationGate>(),
+                provider.GetRequiredService<IUndoContext>(),
+                requireConfirmation),
+            new CreatePipeNetworkTool(
                 provider.GetRequiredService<ICivil3DSession>(),
                 provider.GetRequiredService<ICommandDispatcher>(),
                 provider.GetRequiredService<IConfirmationGate>(),

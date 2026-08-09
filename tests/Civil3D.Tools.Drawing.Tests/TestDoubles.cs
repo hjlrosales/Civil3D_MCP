@@ -41,6 +41,28 @@ internal static class TestDoubles
             => _factory(drawing);
     }
 
+    /// <summary>A save service returning a canned result or delegating to a factory; records the
+    /// zoom request so tools can be asserted against it.</summary>
+    internal sealed class FakeSaveService : ISaveDrawingService
+    {
+        private readonly Func<ActiveDrawing, bool, SaveDrawingResult> _factory;
+
+        public bool LastZoomToExtents { get; private set; }
+
+        public FakeSaveService(SaveDrawingResult result)
+            : this((_, _) => result)
+        {
+        }
+
+        public FakeSaveService(Func<ActiveDrawing, bool, SaveDrawingResult> factory) => _factory = factory;
+
+        public SaveDrawingResult Save(ActiveDrawing drawing, bool zoomToExtents, CancellationToken cancellationToken)
+        {
+            LastZoomToExtents = zoomToExtents;
+            return _factory(drawing, zoomToExtents);
+        }
+    }
+
     /// <summary>A fixed bridge identity provider.</summary>
     internal sealed class TestInfoProvider : IEndpointInfoProvider
     {
@@ -103,12 +125,14 @@ internal static class TestDoubles
     internal static ToolCatalog CreateCatalog(
         ICivil3DSession? session = null,
         IDrawingStatisticsService? statistics = null,
-        IEndpointInfoProvider? info = null)
+        IEndpointInfoProvider? info = null,
+        ISaveDrawingService? save = null)
     {
         var services = new ServiceCollection();
         services.AddSingleton(session ?? new FakeSession(SampleDrawing()));
         services.AddSingleton(statistics ?? new FakeStatisticsService(SampleStatistics()));
         services.AddSingleton(info ?? new TestInfoProvider());
+        services.AddSingleton(save ?? new FakeSaveService(SampleSaveResult()));
 
         return new ToolCatalog(
             new[] { typeof(DrawingInfoTool).Assembly },
@@ -132,6 +156,16 @@ internal static class TestDoubles
         OpenDocumentsCount = 2,
         CurrentDocumentName = "Sample.dwg",
         CurrentDocumentPath = @"C:\Drawings\Sample.dwg",
+    };
+
+    /// <summary>A representative save result.</summary>
+    internal static SaveDrawingResult SampleSaveResult() => new()
+    {
+        Success = true,
+        DrawingName = "Sample.dwg",
+        DrawingPath = @"C:\Drawings\Sample.dwg",
+        SavedAtUtc = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+        ZoomedToExtents = true,
     };
 
     /// <summary>A representative statistics payload.</summary>

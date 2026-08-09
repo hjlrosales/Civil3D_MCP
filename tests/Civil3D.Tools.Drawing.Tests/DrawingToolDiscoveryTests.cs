@@ -14,25 +14,28 @@ namespace Civil3D.Tools.Drawing.Tests;
 public class DrawingToolDiscoveryTests
 {
     [Fact]
-    public void Scanner_FindsBothDrawingTools()
+    public void Scanner_FindsAllDrawingTools()
     {
         IReadOnlyList<Type> types = ToolScanner.FindToolTypes(new[] { typeof(DrawingInfoTool).Assembly });
 
         Assert.Contains(types, static t => t == typeof(DrawingInfoTool));
         Assert.Contains(types, static t => t == typeof(DrawingSummaryTool));
+        Assert.Contains(types, static t => t == typeof(SaveDrawingTool));
     }
 
     [Fact]
-    public void Catalog_ResolvesAndCachesBothTools()
+    public void Catalog_ResolvesAndCachesAllTools()
     {
         ToolCatalog catalog = CreateCatalog();
 
         Assert.True(catalog.TryGetTool("drawing_info", out ITool? info));
         Assert.True(catalog.TryGetTool("drawing_summary", out ITool? summary));
+        Assert.True(catalog.TryGetTool("save_drawing", out ITool? save));
         Assert.True(catalog.TryGetTool("drawing_info", out ITool? infoAgain));
         Assert.Same(info, infoAgain);
         Assert.IsType<DrawingInfoTool>(info);
         Assert.IsType<DrawingSummaryTool>(summary);
+        Assert.IsType<SaveDrawingTool>(save);
     }
 
     [Fact]
@@ -42,7 +45,8 @@ public class DrawingToolDiscoveryTests
 
         Assert.Contains(catalog.Manifests, static m => m.Name == "drawing_info");
         Assert.Contains(catalog.Manifests, static m => m.Name == "drawing_summary");
-        Assert.Equal(2, catalog.ToolNames.Count);
+        Assert.Contains(catalog.Manifests, static m => m.Name == "save_drawing");
+        Assert.Equal(3, catalog.ToolNames.Count);
         Assert.NotNull(catalog.GetManifest("drawing_info"));
     }
 

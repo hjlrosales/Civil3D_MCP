@@ -107,6 +107,7 @@ internal sealed class InMemoryDrawing
     private readonly List<Entry> _surfaces;
     private readonly List<FakeNetwork> _networks;
     private long _nextPipeId = 1000;
+    private long _nextNetworkId = 10000;
 
     public IReadOnlyList<Entry> Alignments => _alignments;
     public IReadOnlyList<Entry> Surfaces => _surfaces;
@@ -129,6 +130,15 @@ internal sealed class InMemoryDrawing
         => _networks.FirstOrDefault(n => string.Equals(n.Name, name, StringComparison.OrdinalIgnoreCase));
 
     public long NextPipeId() => _nextPipeId++;
+
+    public long NextNetworkId() => _nextNetworkId++;
+
+    public FakeNetwork AddNetwork(long id, string name)
+    {
+        var network = new FakeNetwork(id, name);
+        _networks.Add(network);
+        return network;
+    }
 }
 
 /// <summary>Read-only alignment repository over the in-memory drawing.</summary>
@@ -320,6 +330,14 @@ internal sealed class FakePipeCreateRepository : IPipeCreateRepository
             .Where(f => f.Description.Contains(specification.PartFamilyMatch, StringComparison.OrdinalIgnoreCase))
             .ToList();
 
+        if (matches.Count == 0 && !string.IsNullOrWhiteSpace(specification.FallbackMatch))
+        {
+            // Mirrors the real repository: material/rating prompts fall back to the bare material.
+            matches = network.PartFamilies
+                .Where(f => f.Description.Contains(specification.FallbackMatch, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
         if (matches.Count == 0)
         {
             string available = string.Join(", ", network.PartFamilies.Select(f => f.Description));
@@ -384,6 +402,51 @@ internal sealed class FakePipeCreateRepository : IPipeCreateRepository
             EndNorthing = pipe.EndNorthing,
             EndElevation = pipe.EndElevation,
             Length3D = pipe.Length3D,
+        };
+    }
+}
+
+/// <summary>Create-pipe-network write repository over the in-memory drawing: adds a network (with a
+/// parts list carrying one fake family per requested material) and mirrors the real repository's
+/// duplicate-free contract — the service rejects existing names before this is called.</summary>
+internal sealed class FakePipeNetworkCreateRepository : IPipeNetworkCreateRepository
+{
+    private readonly InMemoryDrawing _drawing;
+    public FakePipeNetworkCreateRepository(InMemoryDrawing drawing) => _drawing = drawing;
+
+    public CreatePipeNetworkOutcome Create(IWriteTransaction transaction, CreatePipeNetworkSpecification specification)
+    {
+        if (transaction.Handle is not InMemoryDrawing drawing)
+        {
+            throw new DomainException(DomainErrorCode.TransactionFailed, "bad transaction handle");
+        }
+
+        long networkId = drawing.NextNetworkId();
+        InMemoryDrawing.FakeNetwork network = drawing.AddNetwork(networkId, specification.Name);
+        var familiesAdded = new List<string>();
+        var familiesFailed = new List<string>();
+
+        foreach (string material in specification.Materials)
+        {
+            string description = $"{material} Pipe";
+            double[] sizes = specification.SizesMm.Count > 0
+                ? specification.SizesMm.ToArray()
+                : [100, 150, 200, 250, 300];
+            network.PartFamilies.Add(new InMemoryDrawing.FakePartFamily(description, sizes));
+            familiesAdded.Add(description);
+        }
+
+        string partsListName = string.IsNullOrWhiteSpace(specification.PartsListName)
+            ? $"{specification.Name} Parts List"
+            : specification.PartsListName.Trim();
+
+        return new CreatePipeNetworkOutcome
+        {
+            NetworkId = networkId,
+            Name = network.Name,
+            PartsListName = partsListName,
+            FamiliesAdded = familiesAdded,
+            FamiliesFailed = familiesFailed,
         };
     }
 }

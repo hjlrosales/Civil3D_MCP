@@ -35,6 +35,13 @@ public sealed class CreatePipeCommand : ICommand<CreatePipeResult>
     /// <summary>Text matched against the network's pipe part family descriptions.</summary>
     public string PartFamilyMatch { get; init; } = string.Empty;
 
+    /// <summary>
+    /// The bare pipe material (for example "HDPE"), when the caller supplied one; used as a
+    /// relaxed fallback when <see cref="PartFamilyMatch"/> (material + SDR + pressure class)
+    /// matches no family in the drawing's catalog.
+    /// </summary>
+    public string? Material { get; init; }
+
     /// <summary>Target nominal/inner diameter in millimeters.</summary>
     public double DiameterMm { get; init; }
 

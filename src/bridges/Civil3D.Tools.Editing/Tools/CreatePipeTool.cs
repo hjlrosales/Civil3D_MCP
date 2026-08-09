@@ -70,6 +70,7 @@ public sealed class CreatePipeTool : CommandToolBase<CreatePipeRequest, CreatePi
         {
             NetworkName = input.NetworkName,
             PartFamilyMatch = partFamilyMatch,
+            Material = string.IsNullOrWhiteSpace(input.Material) ? null : input.Material.Trim(),
             DiameterMm = input.DiameterMm,
             LengthMeters = input.LengthMeters,
             StartEasting = input.StartEasting,

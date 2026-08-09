@@ -40,4 +40,12 @@ public sealed record CreatePipeSpecification
 
     /// <summary>Optional free-text description to set on the created pipe.</summary>
     public string? Description { get; init; }
+
+    /// <summary>
+    /// Optional relaxed match text (usually the bare material, for example "HDPE") retried when
+    /// the strict <see cref="PartFamilyMatch"/> matches no family — so material/rating prompts
+    /// such as "HDPE SDR17 PN10" still resolve when the drawing's catalog names families without
+    /// the rating (for example "HDPE Pipe SI"). Never set for explicit user-supplied matches.
+    /// </summary>
+    public string? FallbackMatch { get; init; }
 }

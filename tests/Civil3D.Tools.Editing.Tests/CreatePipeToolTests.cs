@@ -99,6 +99,29 @@ public class CreatePipeToolTests
     }
 
     [Fact]
+    public async Task CreatePipe_StrictMatchNoFamily_FallsBackToBareMaterial()
+    {
+        // The drawing's catalog names the family without the SDR/PN rating; the strict match text
+        // "HDPE SDR17 PN10" matches nothing, but the bare material "HDPE" falls back to it.
+        var drawing = new InMemoryDrawing(
+            networks:
+            [
+                new InMemoryDrawing.FakeNetwork(
+                    100,
+                    "Storm",
+                    new InMemoryDrawing.FakePartFamily("HDPE Pipe", 150, 200, 250)),
+            ]);
+        Container c = Create(drawing: drawing);
+
+        CreatePipeResult result = await CreatePipeAsync(c, HdpeRequest()); // Material = "HDPE", Sdr = "17", PN10
+
+        Assert.True(result.Success);
+        Assert.Equal("HDPE Pipe", result.PartFamilyName);
+        Assert.Equal(0.2, result.InnerDiameterOrWidth, precision: 6); // 200 mm exact match
+        Assert.Single(c.Drawing.Networks.Single(n => n.Name == "Storm").Pipes);
+    }
+
+    [Fact]
     public async Task CreatePipe_NetworkNotFound_ThrowsObjectNotFound()
     {
         Container c = Create();

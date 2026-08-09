@@ -46,7 +46,7 @@ public sealed class AutodeskPipeCreateRepository : IPipeCreateRepository
         }
 
         Network network = OpenNetworkForWrite(database, tx, networkId);
-        (ObjectId familyId, string familyDescription) = ResolvePartFamily(tx, network, specification.PartFamilyMatch);
+        (ObjectId familyId, string familyDescription) = ResolvePartFamily(tx, network, specification.PartFamilyMatch, specification.FallbackMatch);
         ObjectId sizeId = ResolveInitialSize(tx, familyId, familyDescription);
 
         var line = new LineSegment3d(
@@ -66,7 +66,7 @@ public sealed class AutodeskPipeCreateRepository : IPipeCreateRepository
         }
 
         var pipe = (Pipe)tx.GetObject(newPipeId, OpenMode.ForWrite);
-        pipe.ResizeByInnerDiameterOrWidth(specification.DiameterMm / 1000.0, useClosestSize: true);
+        pipe.ResizeByInnerDiameterOrWidth(specification.DiameterMm, useClosestSize: true);
         if (!string.IsNullOrWhiteSpace(specification.Description))
         {
             pipe.Description = specification.Description;
@@ -108,7 +108,7 @@ public sealed class AutodeskPipeCreateRepository : IPipeCreateRepository
         }
     }
 
-    private static (ObjectId Id, string Description) ResolvePartFamily(Transaction tx, Network network, string partFamilyMatch)
+    private static (ObjectId Id, string Description) ResolvePartFamily(Transaction tx, Network network, string partFamilyMatch, string? fallbackMatch = null)
     {
         if (network.PartsListId.IsNull)
         {
@@ -129,6 +129,20 @@ public sealed class AutodeskPipeCreateRepository : IPipeCreateRepository
             if (family.Description.Contains(partFamilyMatch, StringComparison.OrdinalIgnoreCase))
             {
                 matches.Add((familyId, family.Description));
+            }
+        }
+
+        if (matches.Count == 0 && !string.IsNullOrWhiteSpace(fallbackMatch))
+        {
+            // Material/rating prompts (for example "HDPE SDR17 PN10") often reference ratings the
+            // drawing's catalog does not name; retry with the bare material when it was provided.
+            foreach (ObjectId familyId in familyIds)
+            {
+                var family = (PartFamily)tx.GetObject(familyId, OpenMode.ForRead);
+                if (family.Description.Contains(fallbackMatch, StringComparison.OrdinalIgnoreCase))
+                {
+                    matches.Add((familyId, family.Description));
+                }
             }
         }
 

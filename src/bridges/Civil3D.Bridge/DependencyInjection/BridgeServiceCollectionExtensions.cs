@@ -40,6 +40,7 @@ using Civil3D.Tools.Abstractions;
 using Civil3D.Tools.Commands;
 using Civil3D.Tools.Editing.Commands;
 using Civil3D.Tools.Editing.Validators;
+using Civil3D.Tools.Query.Tools;
 using Civil3D.Tools.Drawing.Services;
 using Civil3D.Tools.Health.Dtos;
 using Civil3D.Tools.Health.Workflow;
@@ -104,9 +105,14 @@ public static class BridgeServiceCollectionExtensions
         services.AddSingleton<CancellationRegistry>();
 
         // Discovery: the SDK scans every (non-dynamic) assembly loaded into the bridge process, so
-        // product tool assemblies (Civil3D.Tools.Drawing, and future Civil3D.Tools.* assemblies) are
-        // discovered without any per-tool compile-time registration. Referencing the tool services
-        // below also forces those assemblies to load before the catalog is constructed.
+        // product tool assemblies (Civil3D.Tools.Drawing, Civil3D.Tools.Query, and future
+        // Civil3D.Tools.* assemblies) are discovered without any per-tool compile-time registration.
+        // Referencing the tool services below also forces those assemblies to load before the
+        // catalog is constructed. The query tools have no bridge-owned services of their own, so the
+        // list tool itself is registered: the generic registration forces the Civil3D.Tools.Query
+        // assembly to load (a bare typeof reference is optimized away by the compiler), making its
+        // read-only tools (list_pipe_networks, get_*, search_objects, ...) appear in the catalog.
+        services.AddSingleton<ListPipeNetworksTool>();
         services.AddSingleton<ManifestGenerator>();
         services.AddSingleton(sp => new ToolCatalog(
             AppDomain.CurrentDomain.GetAssemblies().Where(static a => !a.IsDynamic).ToArray(),
@@ -119,6 +125,7 @@ public static class BridgeServiceCollectionExtensions
         // implementations live in Civil3D.Tools.Drawing.
         services.AddSingleton<ICivil3DSession, AutodeskCivil3DSession>();
         services.AddSingleton<IDrawingStatisticsService, AutodeskDrawingStatisticsService>();
+        services.AddSingleton<ISaveDrawingService, AutodeskSaveDrawingService>();
 
         // Domain layer: the read-only transaction context plus every discipline's data source,
         // repository and service. Tools (Phase 4B) depend only on the *Service interfaces.
@@ -187,6 +194,14 @@ public static class BridgeServiceCollectionExtensions
         services.AddSingleton<ICreatePipeService, CreatePipeService>();
         services.AddTransient<ICommandHandler<CreatePipeCommand, CreatePipeResult>, CreatePipeCommandHandler>();
         services.AddTransient<ICommandValidator<CreatePipeCommand>, CreatePipeCommandValidator>();
+
+        // create_pipe_network: the pipe network create write repository and service, plus the
+        // command handler and structural validator. Also reuses the read-only IPipeRepository to
+        // reject duplicate network names before any Autodesk write is attempted.
+        services.AddSingleton<IPipeNetworkCreateRepository, AutodeskPipeNetworkCreateRepository>();
+        services.AddSingleton<ICreatePipeNetworkService, CreatePipeNetworkService>();
+        services.AddTransient<ICommandHandler<CreatePipeNetworkCommand, CreatePipeNetworkResult>, CreatePipeNetworkCommandHandler>();
+        services.AddTransient<ICommandValidator<CreatePipeNetworkCommand>, CreatePipeNetworkCommandValidator>();
 
         // Workflow framework (Phase 7A): the dispatcher pipeline, progress, timeout/cancellation
         // and events are infrastructure; handlers and validators for engineering workflows

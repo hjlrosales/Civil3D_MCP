@@ -52,3 +52,11 @@ public sealed record ObjectRenamed(string ObjectType, long ObjectId, string Prev
 /// <param name="CorrelationId">Correlation of the originating request.</param>
 /// <param name="SessionId">Session of the originating request, when present.</param>
 public sealed record PartCreated(string PartType, long PartId, long NetworkId, string Name, string CorrelationId, string? SessionId) : IDomainEvent;
+
+/// <summary>Published after a new pipe network was created in a committed write transaction.</summary>
+/// <param name="NetworkName">The name of the created network.</param>
+/// <param name="NetworkId">Stable numeric id of the created network.</param>
+/// <param name="PartsListName">The parts list assigned to the network.</param>
+/// <param name="CorrelationId">Correlation of the originating request.</param>
+/// <param name="SessionId">Session of the originating request, when present.</param>
+public sealed record NetworkCreated(string NetworkName, long NetworkId, string PartsListName, string CorrelationId, string? SessionId) : IDomainEvent;

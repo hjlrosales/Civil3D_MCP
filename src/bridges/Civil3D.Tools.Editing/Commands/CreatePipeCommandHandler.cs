@@ -45,6 +45,7 @@ public sealed class CreatePipeCommandHandler : ICommandHandler<CreatePipeCommand
             {
                 NetworkName = command.NetworkName,
                 PartFamilyMatch = command.PartFamilyMatch,
+                FallbackMatch = string.IsNullOrWhiteSpace(command.Material) ? null : command.Material.Trim(),
                 DiameterMm = command.DiameterMm,
                 StartEasting = command.StartEasting,
                 StartNorthing = command.StartNorthing,
