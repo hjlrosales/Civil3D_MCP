@@ -1,188 +1,233 @@
-# Troubleshooting
+# Troubleshooting (Plain-English Guide)
 
-Common problems, in order of likelihood.
+Something not working? This page walks you through the most common problems, in
+order of how likely you are to run into them. Each section tells you **how to
+check** what's wrong and **what to do** about it.
+
+A quick reminder of the two pieces you installed (see
+[Installation](Installation.md)):
+
+- **The Bridge** — the plugin inside Civil 3D. It's the "eyes and hands" on your
+  drawing.
+- **The Server** — the small connecting program between your AI assistant and the
+  Bridge.
+
+Most problems are one of: the Bridge isn't loaded, the Server can't reach the
+Bridge, or the versions don't match. Let's work through them.
 
 ---
 
-## The client shows no tools / "No bridge is currently connected"
+## The AI assistant shows no tools / "No bridge is currently connected"
 
-The server is running but has not connected to a bridge.
+The Server is running, but it can't find the Bridge. Check these in order:
 
-1. **Is Civil 3D running with the bridge loaded?**
-   Check for an endpoint descriptor:
-   ```bash
-   dir %LOCALAPPDATA%\AutodeskMcp\endpoints
+**Step 1 — Is Civil 3D actually running with the Bridge loaded?**
+
+The Bridge leaves a tiny "I'm ready" file when it starts. Look for it:
+
+1. Open **File Explorer**, click into the address bar, and paste:
    ```
-   No files -> the bridge is not loaded. Reinstall the bundle (see `Installation.md`)
-   and restart Civil 3D. Look for a dialog or an error in the bridge log:
-   ```bash
-   type %LOCALAPPDATA%\AutodeskMcp\logs\civil3d-bridge-*.log
+   %LOCALAPPDATA%\AutodeskMcp\endpoints
    ```
-   - `Autodesk SDK not found at ...` - the bridge was built for a different AutoCAD
-     folder; see *Bridge failed to initialize* below.
-   - `Civil 3D Bridge initialized: ...` present -> the bridge is fine; continue.
+2. Press Enter.
 
-2. **Is the server pointing at the right endpoint directory?**
-   If you overrode `endpointsDir` / `AUTODESK_MCP_ENDPOINTS_DIR`, make sure it
-   matches `%LOCALAPPDATA%\AutodeskMcp\endpoints`.
+- **You see a file whose name starts with `Civil3D-`** (for example
+  `Civil3D-12345.json`)? Good — the Bridge is running. Jump to Step 3.
+- **No files?** The Bridge isn't loaded. Reinstall the bundle and restart Civil 3D
+  (see [Installation](Installation.md)). If it still doesn't load, look at the
+  Bridge's diary — its log file:
+  ```
+  %LOCALAPPDATA%\AutodeskMcp\logs\civil3d-bridge-*.log
+  ```
+  Open the most recent file and look for:
+  - A line starting with `Civil 3D Bridge initialized:` — great, the Bridge is
+    fine, the problem is elsewhere.
+  - `Autodesk SDK not found at ...` — the Bridge was built for a different
+    AutoCAD folder; see *Civil 3D shows an error when starting* below.
+  - Anything else that looks like an error — note the text; the sections below
+    cover the common ones.
 
-3. **Wait a few seconds.** Discovery polls every 3 s by default.
+**Step 2 — Is the Server looking in the right place?**
 
-4. **Check server logs (stderr).** You should see `Bridge status changed to connected`.
-   If you see `disconnected`, the pipe connection failed - see below.
+Only applies if you changed the Server's settings. If you set a custom
+`endpointsDir` (or the `AUTODESK_MCP_ENDPOINTS_DIR` environment variable), it
+must point at the same folder shown above: `%LOCALAPPDATA%\AutodeskMcp\endpoints`.
+
+**Step 3 — Give it a few seconds.**
+
+The Server checks for the "I'm ready" file every few seconds by default. If you
+just restarted Civil 3D, wait a moment and try again.
+
+**Step 4 — Check the Server's own messages.**
+
+The Server writes notes to the terminal window it runs in. Look for a line like
+`Bridge status changed to connected`. If instead you see `disconnected`, the
+connection to the Bridge failed — the next section is for you.
 
 ---
 
-## "Cannot connect to pipe" / bridge keeps disconnecting
+## The Server keeps losing the connection / "Cannot connect to pipe"
 
-- **Two Civil 3D sessions:** each instance owns its own pipe; the server picks the
-  newest. If an old instance exited uncleanly, a stale descriptor may linger until
-  the next poll cleans it (default 3 s).
-- **Pipe name collision:** if you hand-set `pipeName` in `bridge.config.json`, ensure
-  it is unique per machine.
-- **Antivirus / policy:** some environments block named-pipe access for spawned
-  processes. Add an exclusion for the Node.js binary and the Autodesk processes.
+The "pipe" is just the private two-way channel the Server uses to talk to the
+Bridge. The usual causes:
+
+- **Two copies of Civil 3D are open.** Each copy owns its own channel, and the
+  Server talks to the most recently started one. If an older copy was closed
+  abruptly, its "I'm ready" file can linger for a few seconds before the Server
+  cleans it up. Close all but one copy of Civil 3D and try again.
+- **A custom channel name was set.** If you hand-set `pipeName` in
+  `bridge.config.json`, make sure it's a name no other machine or copy is using.
+- **Antivirus or security software is blocking it.** Some security products block
+  the private channel between programs. Try adding an exception for the Node.js
+  program and the Autodesk programs (Civil 3D and the Bridge).
 
 ---
 
-## Bridge failed to initialize (alert dialog in Civil 3D)
+## Civil 3D shows an error when starting
 
-The plugin throws during `Initialize()` - details go to `%LOCALAPPDATA%\AutodeskMcp\logs\`.
-The alert shows the full exception chain (root cause last), and failures are written to
-`civil3d-bridge-*.log` even when the bridge could not load its own configuration (a
-fallback logger with default settings is used in that case).
+The Bridge could not start up inside Civil 3D. The full reason is written to the
+Bridge's log file (`%LOCALAPPDATA%\AutodeskMcp\logs\civil3d-bridge-*.log`) and
+usually shown in a pop-up too. Common causes:
 
 - **`Failed to load configuration from file '<bundle>\Contents\Configuration\bridge.config.json'`**
-  The config file was missing, empty, or malformed when Civil 3D started - a bundle
-  copied while the build was still writing is the usual cause (the file ends up empty or
-  truncated). The inner exception shown in the dialog and the bridge log name the actual
-  problem (for example a JSON parse error). Verify the file parses as JSON, rebuild and
-  reinstall the bundle if needed, then restart Civil 3D.
+  The Bridge couldn't read its own settings file — usually because the file was
+  missing, empty, or half-written when you copied the folder (this can happen if
+  you copy the plugin while it's still being built). Fix: check the settings file
+  is complete and well-formed, rebuild and reinstall the plugin (see
+  [Installation](Installation.md)), then restart Civil 3D.
+
 - **`Autodesk SDK not found at 'C:\Program Files\Autodesk\AutoCAD 2025'`**
-  The bridge was built against a different AutoCAD path than the installed one. Set
-  the `AutodeskAcadDir` MSBuild property when building the bundle:
-  ```bash
+  The plugin was built expecting AutoCAD in a different folder than where it's
+  actually installed on your computer. If you build the plugin yourself, tell it
+  where AutoCAD lives:
+  ```
   node eng/scripts/build-bridge-bundle.mjs --msbuild "-p:AutodeskAcadDir=C:\Program Files\Autodesk\AutoCAD 2026"
   ```
-- **Binding errors (`Could not load file or assembly ...`)** - a required dependency
-  DLL is missing next to `Civil3D.Bridge.dll`. Rebuild the bundle (it copies all
-  managed dependencies into `Contents/`).
-- **Wrong .NET runtime** - the bridge requires the .NET 8 Desktop Runtime; Civil 3D
-  2025/2026 ship it, but a stripped install may not. Install
-  [.NET 8 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/8.0).
+
+- **`Could not load file or assembly ...`**
+  A helper file that the Bridge needs is missing next to it. Rebuilding the plugin
+  copies all the helper files into place — see [Installation](Installation.md).
+
+- **".NET runtime" error.**
+  The Bridge needs the .NET 8 Desktop Runtime. Civil 3D 2025/2026 normally bring
+  it along, but a stripped-down install might not. Install it from
+  [dotnet.microsoft.com](https://dotnet.microsoft.com/download/dotnet/8.0).
 
 ---
 
-## Server exits immediately
+## The Server closes itself immediately
 
-- Run `autodesk-mcp-server --version`. If that fails, reinstall Node >= 20 or the
-  package.
-- `fatal startup error` on stderr with a config error -> fix the config file, or
-  remove it (defaults apply).
-- Some clients require the full path to the binary when `npx` is not on the client's
-  PATH. Use `command: "node", args: ["C:\...\autodesk-mcp-server\dist\index.js"]`.
+- Try `autodesk-mcp-server --version` in a terminal. If that command fails,
+  Node.js (version 20 or newer) or the Server package may not be installed
+  properly — reinstall both and try again.
+- If the Server prints `fatal startup error` followed by a settings problem, its
+  settings file is the culprit. Fix the file, or delete it so the Server uses its
+  built-in defaults.
+- Some AI assistants can't find the `npx` program. If so, point the assistant
+  straight at the Server file with the `node` command:
+  ```json
+  {
+    "mcpServers": {
+      "autodesk-mcp": {
+        "command": "node",
+        "args": ["C:\\...\\autodesk-mcp-server\\dist\\index.js"]
+      }
+    }
+  }
+  ```
 
 ---
 
-## Tools fail with `E_CONFIRMATION_REQUIRED`
+## Tools say `E_CONFIRMATION_REQUIRED`
 
-Editing tools require confirmation. If your client does not support the elicitation
-flow, retry the call with the `confirm: true` argument (the tool error message
-includes this hint). Do not make it a habit for destructive operations.
+Editing tools ask for your permission before changing the drawing. Your AI
+assistant should ask you and pass your answer along. If your assistant doesn't do
+this automatically, you can add `"confirm": true` to the tool call yourself (the
+error message tells you this). Just don't get into the habit of always approving
+destructive actions without reading what they do.
 
 ---
 
-## Tools fail with `E_TIMEOUT`
+## Tools say `E_TIMEOUT` ("took too long")
 
-Large operations (corridor rebuild, surface comparison) can exceed the 30 s default
-request timeout. Raise it for the server:
+Big jobs (rebuilding a corridor, comparing surfaces) can take longer than the
+default 30-second limit. Give the Server more time by putting this in its
+settings:
 
 ```json
 { "requestTimeoutMs": 120000 }
 ```
 
-or the equivalent environment variable. Long-running tools declare their own
-timeouts in the manifest; the server honors the larger of the two.
+(Or use the matching environment variable.) Some tools declare their own, longer
+timeouts — the Server uses whichever is longer.
 
 ---
 
-## Progress never arrives in the client
+## Progress updates never show up in the assistant
 
-- Progress requires `supportsProgress` in the bridge config and the client passing a
-  progress token (`_meta.progressToken`).
-- Not all clients surface progress notifications; check the server stderr for
-  progress-forwarding entries before assuming the pipe is at fault.
+- Progress messages only work if the Bridge's settings have `supportsProgress`
+  turned on **and** your AI assistant asks for them. Not every assistant does.
+- Before blaming the connection, check the Server's terminal output for
+  progress-related lines.
 
 ---
 
-## Cancellation appears to do nothing
+## Cancel doesn't seem to do anything
 
-- Cancellation only applies to in-flight requests; if the tool already returned,
-  nothing to cancel.
-- The bridge honors `$/cancel` only for tools with `supportsCancellation`; some
-  single-shot API calls cannot be interrupted mid-flight.
+- Cancelling only works on a request that's still running. If the tool already
+  finished, there's nothing to cancel.
+- The Bridge only honours cancels for tools that support cancellation, and some
+  one-shot drawing operations simply can't be interrupted halfway through.
 
 ---
 
 ## Version mismatch errors
 
-The handshake exchanges `protocolVersion`. Server and bridge must speak the same
-**major** protocol version. Reinstall both from the same release. Bridge and server
-versions do not have to be equal, but protocol majors must match.
+When the Server and the Bridge first meet, they compare version numbers. They must
+agree on the **major** protocol version. If they don't, reinstall **both** from
+the same release (the Bridge inside Civil 3D and the Server package). They don't
+have to be the exact same version — just the same major version.
 
 ---
 
-## Stale artifacts from an older install
+## Leftover junk from an older version
 
-After upgrading, clean up leftovers:
+After upgrading, old files can linger and cause confusion. Clean them up (in a
+terminal):
 
-```bash
-# remove old bundle folders
+```
+# remove old plugin folders
 rm -rf %APPDATA%\Autodesk\ApplicationPlugins\Civil3D.Bridge.Bundle-*
-# remove stale endpoint descriptors
+# remove stale "I'm ready" files
 rm -f %LOCALAPPDATA%\AutodeskMcp\endpoints\*.json
 ```
 
-Then restart Civil 3D and the client.
+Then restart Civil 3D and your AI assistant.
 
 ---
 
-## Still stuck?
+## Still stuck? How to get help (for advanced users)
 
-- Check the **server** structured logs (stderr) for the failing request's
-  correlation id, and the **bridge** log for the same correlation id.
-- Search or open an issue in the repository with both logs (redact drawing names if
-  sensitive) and the exact tool call.
+When you report a problem, the two log files tell the whole story:
 
----
+- **Server log** — the terminal output where the Server runs (it prints notes to
+  the screen; the message stream it talks to the AI over stays clean).
+- **Bridge log** — `%LOCALAPPDATA%\AutodeskMcp\logs\civil3d-bridge-*.log`.
 
-## Correlating failures across logs (Phase 9)
+Every request gets a special **correlation id** — a long string of letters and
+numbers — that appears in **both** logs. Searching for the same id in both files
+shows exactly what happened to one request from start to finish. Useful things to
+look for:
 
-Every important operation can be traced with the following fields, all present in
-server logs (pino, written to **stderr** - stdout stays clean for the protocol):
-
-| Field | Log line |
+| You want to know... | Look for... |
 | --- | --- |
-| `correlationId` | `Tool <name> succeeded|failed ... (correlation <uuid>)` |
-| `sessionId` | `Connected to <bridge> (session <id>, protocol <v>)` |
-| tool name | every tool execution line |
-| bridge instance / pipe | `Selected endpoint <name> (<product>, pipe <pipe>)` and `Connecting to bridge on pipe <pipe> (attempt <n>)` |
-| execution duration | `Tool <name> completed in <ms> ms (correlation <uuid>)` |
+| Did the Bridge ever answer? | The correlation id in a "completed" line. If it's missing, the Bridge never responded. |
+| Which Bridge copy was used? | `Selected endpoint <name> (<product>, pipe <pipe>)` |
+| A timeout | `Tool <name> failed with E_TOOL_TIMEOUT ...` |
+| A cancelled request | `Cancellation forwarded for correlation <uuid>` |
+| A refused connection | `Connecting to bridge on pipe ... (attempt N)` with a rising number |
+| A failed tool | `Tool <name> failed with <error code>: <message> (correlation <uuid>)` |
 
-Typical operator flows:
-
-- **Bridge unavailable**: look for `Selected endpoint` absence or reconnect lines
-  with increasing attempt numbers.
-- **Pipe connection failure**: `Connecting to bridge on pipe ... (attempt N)`
-  followed by `Bridge status changed to reconnecting`.
-- **Protocol mismatch**: the handshake failure line names the refused version.
-- **Tool timeout**: `Tool <name> failed with E_TOOL_TIMEOUT ...`.
-- **Tool cancellation**: `Cancellation forwarded for correlation <uuid>`.
-- **Autodesk transaction failure / invalid arguments**: `Tool <name> failed
-  with <stable error code>: <safe message> (correlation <uuid>)`. Raw Autodesk
-  stack traces stay in the bridge log only and never cross the protocol.
-
-If a request seems stuck, first check that the correlation id appears in a
-`completed` line; a missing line means the bridge never answered (reconnect or
-bridge restart). See `docs/PRODUCTION-HARDENING.md` for the full hardening
-report and recovery guarantees.
+When opening an issue in the repository, include **both** logs and the exact tool
+call you used. If your drawing has sensitive names, you can remove them first —
+the request and the error codes are what matter.
