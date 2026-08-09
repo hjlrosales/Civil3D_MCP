@@ -30,9 +30,21 @@ Any client that speaks MCP over **stdio** works. Tested configurations:
 
 See `examples/clients/` for ready-made configs. The server uses standard MCP
 features only: `tools/list`, `tools/call`, `notifications/progress`,
-`notifications/cancelled`, and structured error results (`isError`). Clients that
-support MCP elicitation can drive confirmation; clients that do not can retry with
-the `confirm` argument on editing tools.
+`notifications/cancelled`, `notifications/tools/list_changed`, and structured error
+results (`isError`). Clients that support MCP elicitation can drive confirmation;
+clients that do not can retry with the `confirm` argument on editing tools.
+
+### Dynamic tool lists
+
+The server advertises the `tools.listChanged` capability, because the tool catalog
+depends on a Civil 3D instance that can start and stop independently of the client.
+
+- **Clients that honour `tools/list_changed`** (Claude Desktop, VS Code, Cursor,
+  Cline) refresh automatically: tools appear when Civil 3D starts and disappear when
+  it closes, with no client restart and no required start-up order.
+- **Clients that ignore the notification** and cache the first `tools/list` response
+  will show an empty catalog if they connected before Civil 3D was running. Start
+  Civil 3D before that client, or reconnect the server from the client's UI.
 
 ## Protocol compatibility
 

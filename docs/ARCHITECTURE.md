@@ -337,14 +337,20 @@ sequenceDiagram
     participant REG as Endpoint Registry
 
     B--xS: Pipe closed (Civil 3D exited / crashed)
-    S->>S: Mark bridge offline; fail in-flight calls with E_BRIDGE_UNAVAILABLE
-    loop Backoff (1s → 2s → … max 30s)
-        S->>REG: Rescan endpoints (ignore stale PIDs)
+    S->>S: Fail in-flight calls with E_BRIDGE_UNAVAILABLE
+    S->>S: Drop the catalog, notify MCP client (listChanged → 0 tools)
+    loop Backoff (1s → 2s → … capped at 256s), then park + retry every retryCooldownMs
+        S->>REG: Rescan endpoints every poll (ignore stale PIDs)
     end
     B->>REG: (Civil 3D restarts) new descriptor
     S->>B: connect + handshake + tools/list
     S->>S: Diff catalog, re-register tools, notify MCP client (listChanged)
 ```
+
+The rescan runs on **every** poll, not only when the registry changes, so a connection that
+failed against an unchanged descriptor is retried rather than stranded. Exhausting the
+attempt budget parks the endpoint for `retryCooldownMs`; it is never a terminal state while
+the server process lives.
 
 ### 5.5 Shutdown
 

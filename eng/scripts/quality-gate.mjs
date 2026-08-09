@@ -104,11 +104,18 @@ function nodeGate() {
       return run(npm, ['pack', './src/server/Autodesk.Mcp.Server', '--pack-destination', 'artifacts/packages']);
     }],
     ['fresh-install validation', () => {
-      const packed = fs.readdirSync(path.join(root, 'artifacts', 'packages')).filter((name) => name.endsWith('.tgz'))[0];
-      const tarball = packed !== undefined ? path.join(root, 'artifacts', 'packages', packed) : undefined;
-      const args = ['eng/scripts/validate-fresh-install.mjs', '--server'];
-      if (tarball !== undefined) args.push('--tarball=' + tarball);
-      return run('node', args);
+      // Pick the tarball for the version under test. artifacts/packages accumulates tarballs
+      // from earlier releases, and taking the first entry validated a stale one.
+      const version = JSON.parse(fs.readFileSync(path.join(root, 'eng', 'version.json'), 'utf8')).version;
+      const expected = `autodesk-mcp-server-${version}.tgz`;
+      const packages = path.join(root, 'artifacts', 'packages');
+      const packed = fs.readdirSync(packages).find((name) => name === expected);
+      if (packed === undefined) {
+        process.stdout.write(`Expected ${expected} in artifacts/packages (run the pack step first).\n`);
+        return false;
+      }
+      const tarball = path.join(packages, packed);
+      return run('node', ['eng/scripts/validate-fresh-install.mjs', '--server', '--tarball=' + tarball]);
     }],
   ];
   for (const [name, fn] of steps) {

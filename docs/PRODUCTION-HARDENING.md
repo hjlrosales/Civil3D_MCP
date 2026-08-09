@@ -90,6 +90,16 @@ states the observed recovery behavior.
   the same tool set (regression-tested); a changed manifest replaces validators.
 - **No permanently stuck connections**: the manager reconnects with bounded
   attempts and backoff, and the client surfaces the state through logs and errors.
+- **No terminal give-up**: exhausting the reconnect budget parks the endpoint for
+  `retryCooldownMs` instead of abandoning it. Because discovery re-evaluates on
+  every poll (not only on registry changes), a bridge that becomes reachable later
+  is always picked up without restarting the server.
+- **No stale catalog**: losing the bridge clears the advertised tools and notifies
+  the MCP client, so `tools/list` never offers tools that cannot execute.
+- **No silently empty client**: the server declares `tools.listChanged` and pushes
+  `notifications/tools/list_changed` on every catalog transition, so a client that
+  listed tools before any bridge existed still converges on the real catalog. The
+  lifecycle suite covers both start-up orderings and every appear/disappear cycle.
 
 ---
 

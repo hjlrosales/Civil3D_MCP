@@ -67,6 +67,7 @@ async function main(): Promise<void> {
     capabilities: { supportsConfirmation: true, supportsProgress: true, supportsCancellation: true },
     reconnectDelayMs: config.reconnectDelayMs,
     maxReconnectAttempts: config.maxReconnectAttempts,
+    retryCooldownMs: config.retryCooldownMs,
     requestTimeoutMs: config.requestTimeoutMs,
     heartbeatIntervalMs: config.heartbeatIntervalMs,
     endpointsPollIntervalMs: config.endpointsPollIntervalMs,
@@ -92,6 +93,11 @@ async function main(): Promise<void> {
   manager.on('manifest', (manifest: Parameters<McpAdapter['updateManifest']>[0]) => {
     adapter.updateManifest(manifest);
   });
+  // No bridge is available any more: stop advertising tools that cannot run.
+  manager.on('manifestCleared', () => {
+    adapter.clearManifest();
+    logger.info('No bridge is connected; 0 tools are available until Civil 3D returns.');
+  });
   manager.on('progress', (progress: Parameters<McpAdapter['handleBridgeProgress']>[0]) => {
     adapter.handleBridgeProgress(progress);
   });
@@ -99,7 +105,9 @@ async function main(): Promise<void> {
 
   await adapter.attach(new StdioServerTransport());
   manager.start();
-  logger.info('Autodesk MCP Server ready on stdio.');
+  logger.info(
+    'Autodesk MCP Server ready on stdio. Tools appear automatically once a Civil 3D bridge is discovered; the server keeps watching if Civil 3D is not running yet.',
+  );
 
   const shutdown = async (signal: string): Promise<void> => {
     logger.info('Received %s; shutting down.', signal);

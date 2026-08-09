@@ -25,11 +25,18 @@ Autodesk Civil 3D 2025 / 2026
 
 ## Quick start
 
-1. Install the **bridge**: copy the `Civil3D.Bridge.Bundle` folder from a release
-   into `%APPDATA%\Autodesk\ApplicationPlugins\` and restart Civil 3D.
+1. Install the **bridge**: copy the `Civil3D.Bridge.Bundle-<version>.bundle` folder
+   from a release into `%APPDATA%\Autodesk\ApplicationPlugins\` and restart Civil 3D.
+   It loads automatically — `NETLOAD` is not part of normal use.
 2. Install the **server**: `npm install -g autodesk-mcp-server` (or
-   `npx -y autodesk-mcp-server`).
+   `npx -y autodesk-mcp-server@latest`).
 3. Point your AI client at the server (ready-made configs in `examples/clients/`).
+
+Civil 3D and your AI client can be started in any order, and either can be restarted
+without touching the other: the server watches the endpoint registry continuously and
+pushes tool-list updates as bridges come and go. See
+[docs/Installation.md](docs/Installation.md#how-vs-code-connects-to-civil-3d) for the
+full connection walkthrough, including how to diagnose "Discovered 0 tools".
 
 See `docs/QuickStart.md` and `docs/Installation.md` for the full walkthrough.
 

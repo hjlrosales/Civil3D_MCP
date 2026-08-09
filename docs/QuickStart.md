@@ -101,6 +101,17 @@ live in `examples/clients/`):
 all the Civil 3D tools — there are 100+, covering alignments, surfaces, corridors,
 pipe networks, quantity takeoff, and more.
 
+> **Does the order matter? No.** You can start Civil 3D and your assistant in
+> whichever order you like. If your assistant starts first it will briefly show
+> **0 tools** — that is correct, there is nothing to talk to yet. Open Civil 3D and
+> the tools appear by themselves within a few seconds. The same is true in reverse:
+> close Civil 3D and the tools disappear; reopen it and they come back. You never
+> need to restart your assistant, and you never need to run `NETLOAD`.
+>
+> If you are on VS Code and it keeps saying `Discovered 0 tools` *while Civil 3D is
+> running*, see [Troubleshooting](Troubleshooting.md) — the most likely cause is a
+> Server older than 1.0.1.
+
 ---
 
 ## 4. Try it out

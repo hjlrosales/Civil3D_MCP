@@ -60,9 +60,55 @@ just restarted Civil 3D, wait a moment and try again.
 
 **Step 4 — Check the Server's own messages.**
 
-The Server writes notes to the terminal window it runs in. Look for a line like
-`Bridge status changed to connected`. If instead you see `disconnected`, the
-connection to the Bridge failed — the next section is for you.
+The Server writes notes to the terminal window it runs in (in VS Code: the MCP
+server's Output panel). It narrates every step, so the *last* line it managed to
+print tells you where it stopped:
+
+| Last line you see | What it means |
+| --- | --- |
+| `Searching for bridge endpoints in ...` | The Server started but found no "I'm ready" file. Go back to Step 1. |
+| `Endpoint discovered: ...` | It found the Bridge and is about to connect. |
+| `Connecting to bridge on pipe ...` | It is dialling. If nothing follows, the next section is for you. |
+| `Handshake succeeded with ...` | Connected. The catalog is loading. |
+| `Manifest loaded ... N tool(s) available` | Everything worked; `N` tools are ready. |
+| `Advertised N tool(s) to the MCP client` | The Server told your assistant to refresh its tool list. |
+| `No bridge is connected; 0 tools are available` | Civil 3D closed. The Server is fine and waiting — reopen Civil 3D and it reconnects by itself. |
+
+**Step 5 — Are you running an old Server?**
+
+The Server's first log line reports its version, for example
+`Autodesk MCP Server 1.0.1 starting`. Versions before **1.0.1** had a bug where a
+client that asked for the tool list before Civil 3D was discovered would keep
+showing `0 tools` for the rest of the session, even though the Bridge was working
+perfectly. If you see an older version, update:
+
+```
+npx -y autodesk-mcp-server@latest
+```
+
+or, for a permanent install, `npm install -g autodesk-mcp-server@latest`. Then
+restart your assistant.
+
+---
+
+## VS Code says "Discovered 0 tools"
+
+This is normal and temporary in exactly one case: **Civil 3D was not running when
+VS Code started.** Start Civil 3D, wait a few seconds, and the tools appear on
+their own — the Server watches for the Bridge continuously and tells VS Code as
+soon as it finds it. You do not need to restart VS Code.
+
+If Civil 3D *is* running and you still see `0 tools`, work through the steps in the
+previous section — in particular Step 5, since a pre-1.0.1 Server shows this
+permanently.
+
+Things that should **never** be needed to fix this:
+
+- Running `NETLOAD` in Civil 3D (the bundle loads itself).
+- Restarting VS Code because you closed and reopened Civil 3D.
+- Restarting Civil 3D because you closed and reopened VS Code.
+- Deleting "I'm ready" files by hand.
+- Opening Civil 3D and VS Code in a particular order.
 
 ---
 

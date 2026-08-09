@@ -6,9 +6,10 @@
   "preferredBridge": "Civil3D.Bridge",
   "reconnectDelayMs": 1000,
   "maxReconnectAttempts": 10,
+  "retryCooldownMs": 30000,
   "requestTimeoutMs": 30000,
   "heartbeatIntervalMs": 15000,
   "endpointsPollIntervalMs": 3000,
   "clientName": "Autodesk.MCP.Server",
-  "clientVersion": "1.0.0"
+  "clientVersion": "1.0.1"
 }

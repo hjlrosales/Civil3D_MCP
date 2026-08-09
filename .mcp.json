@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "autodesk-mcp": {
+      "command": "npx",
+      "args": ["-y", "autodesk-mcp-server"]
+    }
+  }
+}

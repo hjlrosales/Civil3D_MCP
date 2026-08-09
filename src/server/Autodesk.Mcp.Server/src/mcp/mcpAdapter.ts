@@ -42,6 +42,10 @@ export class McpAdapter {
   private readonly progressTokens = new Map<string, string | number>();
   private manifest: Manifest | null = null;
   private server: Server | null = null;
+  /** Signature of the catalog last advertised to the client, for change detection. */
+  private advertisedSignature = '';
+  /** True once the MCP client has completed initialization (notifications are safe to send). */
+  private initialized = false;
 
   constructor(options: McpAdapterOptions) {
     this.options = options;
@@ -52,11 +56,70 @@ export class McpAdapter {
     return this.manifest;
   }
 
-  /** Applies a freshly loaded (or changed) manifest; tools/list reflects it immediately. */
+  /**
+   * Applies a freshly loaded (or changed) manifest. Clients such as VS Code call tools/list once,
+   * immediately after initialize - long before a bridge is discovered - and never poll again, so
+   * the catalog change has to be pushed to them or the session stays permanently empty.
+   */
   updateManifest(manifest: Manifest): void {
     this.manifest = manifest;
     // Tool input schemas may have changed with the manifest; drop stale validators.
     this.validator.clear();
+    this.publishToolListChange();
+  }
+
+  /**
+   * Drops the advertised catalog because no bridge is available (Civil 3D closed, or the bridge
+   * became unreachable). tools/list must not keep advertising tools that cannot run.
+   */
+  clearManifest(): void {
+    if (this.manifest === null) {
+      return;
+    }
+    this.manifest = null;
+    this.validator.clear();
+    this.publishToolListChange();
+  }
+
+  /**
+   * Sends notifications/tools/list_changed when the visible catalog actually changed. The
+   * signature covers the names and versions that tools/list exposes, so an identical manifest
+   * reloaded after a reconnect does not churn the client.
+   */
+  private publishToolListChange(): void {
+    const signature = this.catalogSignature();
+    if (signature === this.advertisedSignature) {
+      return;
+    }
+    this.advertisedSignature = signature;
+
+    const server = this.server;
+    if (server === null || !this.initialized) {
+      // Not connected yet, or the client has not finished initializing. oninitialized replays
+      // the notification once the session is ready.
+      return;
+    }
+
+    const toolCount = this.manifest?.tools.length ?? 0;
+    server.sendToolListChanged().then(
+      () => this.options.logger.info('Advertised %d tool(s) to the MCP client (tools/list_changed sent).', toolCount),
+      (error: unknown) => this.options.logger.warn(
+        'Failed to notify the MCP client of the tool-list change: %s',
+        error instanceof Error ? error.message : String(error),
+      ),
+    );
+  }
+
+  private catalogSignature(): string {
+    const manifest = this.manifest;
+    if (manifest === null) {
+      return '';
+    }
+    return manifest.tools
+      .filter((tool) => !tool.deprecated)
+      .map((tool) => `${tool.name}@${tool.version}`)
+      .sort()
+      .join('|');
   }
 
   /** Registers MCP handlers on a fresh SDK Server and connects it to the transport. */
@@ -67,12 +130,26 @@ export class McpAdapter {
 
     const server = new Server(
       { name: this.options.serverName, version: this.options.serverVersion },
-      { capabilities: { tools: {} } },
+      // listChanged tells the client to subscribe to notifications/tools/list_changed. Without
+      // it, a client that lists tools before the bridge is discovered never sees the catalog.
+      { capabilities: { tools: { listChanged: true } } },
     );
     server.setRequestHandler(ListToolsRequestSchema, () => this.handleListTools());
     server.setRequestHandler(CallToolRequestSchema, (request, extra) => this.handleCallTool(request, extra));
     server.setRequestHandler(PingRequestSchema, async () => ({}));
     server.onerror = (error: unknown) => this.options.logger.error('MCP server error: %o', error);
+    server.oninitialized = () => {
+      this.initialized = true;
+      // The bridge may have been discovered before the client finished initializing; replay the
+      // catalog change now that notifications are deliverable.
+      if (this.manifest !== null) {
+        const toolCount = this.manifest.tools.length;
+        server.sendToolListChanged().then(
+          () => this.options.logger.info('Advertised %d tool(s) to the MCP client on initialize.', toolCount),
+          () => undefined,
+        );
+      }
+    };
 
     this.server = server;
     await server.connect(transport);
@@ -83,6 +160,7 @@ export class McpAdapter {
   async close(): Promise<void> {
     const server = this.server;
     this.server = null;
+    this.initialized = false;
     this.progressTokens.clear();
     if (server !== null) {
       await server.close();

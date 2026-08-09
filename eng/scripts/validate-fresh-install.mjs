@@ -153,18 +153,23 @@ async function validateServer() {
 
 /** ---------------- bundle: integrity ---------------- */
 async function validateBundle() {
-  await check('bundle zip exists and contains PackageContents.xml', () => {
+  // The archive must extract straight into %APPDATA%\Autodesk\ApplicationPlugins and auto-load,
+  // which means everything sits under a root folder whose name ends with '.bundle'.
+  await check('bundle zip extracts to a loader-visible <name>.bundle folder', () => {
     const zip = path.join(root, 'artifacts', 'bundles', 'Civil3D.Bridge.Bundle-' + version + '.zip');
     if (!fs.existsSync(zip)) {
       process.stdout.write('(no bundle zip; run build-bridge-bundle.mjs first) ');
       return false;
     }
+    const expected = 'Civil3D.Bridge.Bundle-' + version + '.bundle/PackageContents.xml';
+    // No pipes in this script: the command goes through a shell that would consume them.
     const script = [
       'Add-Type -AssemblyName System.IO.Compression.FileSystem;',
       "$z = [System.IO.Compression.ZipFile]::OpenRead('" + zip.replaceAll("'", "''") + "');",
       "Write-Output ('entries=' + $z.Entries.Count);",
-      "$has = $z.Entries.FullName -contains 'PackageContents.xml';",
-      "Write-Output ('hasPackageContents=' + $has);",
+      "Write-Output ('rooted=' + ($z.Entries.FullName -contains '" + expected + "'));",
+      // A bare PackageContents.xml would mean the archive extracts without the .bundle folder.
+      "Write-Output ('unrooted=' + ($z.Entries.FullName -contains 'PackageContents.xml'));",
       '$z.Dispose()',
     ].join(' ');
     const result = run('powershell', ['-NoProfile', '-Command', script]);
@@ -172,8 +177,8 @@ async function validateBundle() {
       process.stdout.write(result.stderr);
       return false;
     }
-    process.stdout.write(result.stdout.trim() + ' ');
-    return result.stdout.includes('hasPackageContents=True');
+    process.stdout.write(result.stdout.trim().replaceAll('\n', ' ') + ' ');
+    return result.stdout.includes('rooted=True') && result.stdout.includes('unrooted=False');
   });
 
   await check('PackageContents.xml declares the expected AppVersion', () => {

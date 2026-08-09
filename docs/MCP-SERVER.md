@@ -29,13 +29,13 @@ The server is layered so that each concern is isolated and individually testable
 
 | Layer | Module | Responsibility |
 | --- | --- | --- |
-| MCP | `src/mcp/mcpAdapter.ts` | Registers MCP handlers (`tools/list`, `tools/call`, `ping`) on the SDK `Server`; validates arguments; maps bridge envelopes to MCP results; forwards progress and cancellation. |
+| MCP | `src/mcp/mcpAdapter.ts` | Registers MCP handlers (`tools/list`, `tools/call`, `ping`) on the SDK `Server`; declares `tools.listChanged` and pushes `notifications/tools/list_changed` when the catalog changes; validates arguments; maps bridge envelopes to MCP results; forwards progress and cancellation. |
 | MCP | `src/mcp/schema.ts` | Compiles and caches ajv validators from the bridge's JSON Schema per tool. |
 | MCP | `src/mcp/errors.ts` | Maps bridge failures to structured `isError` tool results; keeps the bridge error code visible to the AI client. |
 | Manager | `src/manager.ts` | Selects the bridge to talk to (product/bridge preferences, recency), owns the reconnect loop with backoff, and re-emits `manifest` / `progress` / `status` events. |
 | Bridge | `src/bridge/bridgeClient.ts` | One authenticated session to a bridge: handshake, session id, `tools/list` manifest loading with diff caching, `tools/execute`, `$/cancel`, progress events. |
 | Discovery | `src/discovery/endpointStore.ts` | Scans `%LOCALAPPDATA%\AutodeskMcp\endpoints`, parses descriptors, checks pid liveness, cleans stale files, and selects the best endpoint. |
-| Discovery | `src/discovery/monitor.ts` | Polls the registry and emits `update` when the endpoint set changes (appear / disappear / replace). |
+| Discovery | `src/discovery/monitor.ts` | Polls the registry; emits `snapshot` on every poll (drives the manager's state machine) and `update` only when the endpoint set changes (appear / disappear / replace). |
 | Transport | `src/transport/bridgeConnection.ts` | One named-pipe session: NDJSON framing, request/response correlation by correlation id, per-request timeouts, heartbeat, cancellation, and rejection of in-flight requests on disconnect. |
 | Transport | `src/transport/ndjson.ts` / `pipe.ts` | Newline-delimited JSON framing with size guards; Windows named-pipe path resolution and connection. |
 | Protocol | `src/protocol/*` | TypeScript mirrors of the shared wire contracts (`RequestEnvelope`, `ResponseEnvelope`, `Manifest`, `ToolManifest`, `EndpointDescriptor`, ...), method/notification constants, and SemVer helpers. |
@@ -107,11 +107,12 @@ Path is `--config <path>` / `-c <path>` on the command line, or the
   "preferredBridge": "Civil3D.Bridge",
   "reconnectDelayMs": 1000,
   "maxReconnectAttempts": 10,
+  "retryCooldownMs": 30000,
   "requestTimeoutMs": 30000,
   "heartbeatIntervalMs": 15000,
   "endpointsPollIntervalMs": 3000,
   "clientName": "Autodesk.MCP.Server",
-  "clientVersion": "1.0.0"
+  "clientVersion": "1.0.1"
 }
 ```
 
@@ -125,6 +126,7 @@ Path is `--config <path>` / `-c <path>` on the command line, or the
 | `AUTODESK_MCP_PREFERRED_BRIDGE` | `preferredBridge` |
 | `AUTODESK_MCP_RECONNECT_DELAY_MS` | `reconnectDelayMs` |
 | `AUTODESK_MCP_MAX_RECONNECT_ATTEMPTS` | `maxReconnectAttempts` |
+| `AUTODESK_MCP_RETRY_COOLDOWN_MS` | `retryCooldownMs` |
 | `AUTODESK_MCP_REQUEST_TIMEOUT_MS` | `requestTimeoutMs` |
 | `AUTODESK_MCP_HEARTBEAT_INTERVAL_MS` | `heartbeatIntervalMs` |
 | `AUTODESK_MCP_ENDPOINTS_POLL_INTERVAL_MS` | `endpointsPollIntervalMs` |
@@ -134,7 +136,8 @@ Path is `--config <path>` / `-c <path>` on the command line, or the
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `reconnectDelayMs` | 1000 | Base delay before reconnecting; doubles after each failed attempt. |
-| `maxReconnectAttempts` | 10 | Reconnect attempts before giving up (`0` = retry forever). Discovery still reconnects whenever a usable endpoint appears. |
+| `maxReconnectAttempts` | 10 | Reconnect attempts in one burst before the endpoint is parked (`0` = keep retrying in the same burst). Parking is never terminal; discovery retries after `retryCooldownMs`. |
+| `retryCooldownMs` | 30000 | How long a parked, still-registered endpoint is left alone before discovery retries it. |
 | `requestTimeoutMs` | 30000 | Per-request timeout for bridge calls. |
 | `heartbeatIntervalMs` | 15000 | `health/ping` interval (`0` disables the heartbeat). |
 | `endpointsPollIntervalMs` | 3000 | Registry polling interval. |
@@ -157,17 +160,39 @@ traffic, so it must stay clean.
 
 ## Reconnect behavior
 
-1. The monitor emits a registry change; the manager selects the best endpoint.
+1. The monitor scans the registry on every poll and hands the manager the current endpoint
+   set; the manager selects the best endpoint.
 2. If the endpoint changed, the old session is closed (in-flight requests reject with
    `E_BRIDGE_UNAVAILABLE`) and a new connection is attempted.
-3. Failed connects retry with exponential backoff (`reconnectDelayMs` doubling, capped by
-   `maxReconnectAttempts`). A heartbeat failure or a dropped pipe also triggers the loop.
-4. On connect, the manager performs the handshake and reloads the manifest; `tools/list`
-   reflects the new catalog immediately.
+3. Failed connects retry with exponential backoff (`reconnectDelayMs` doubling, capped at
+   256x). A heartbeat failure or a dropped pipe also triggers the loop.
+4. After `maxReconnectAttempts` failures the endpoint is **parked**, not abandoned: the
+   manager returns to `discovering` and retries the same endpoint once `retryCooldownMs`
+   has elapsed, for as long as it stays registered with a live process. There is no terminal
+   state while the server is running, so a bridge that becomes reachable later is always
+   picked up without restarting the server.
+5. On connect, the manager performs the handshake and reloads the manifest, then emits
+   `manifest`; the adapter updates `tools/list` and pushes `notifications/tools/list_changed`.
+6. When no usable endpoint remains, the manager emits `manifestCleared`; the adapter drops the
+   catalog and notifies the client, so `tools/list` never advertises tools that cannot run.
 
-Because discovery and the reconnect loop are independent, the server also recovers when a
-bridge exits and a **new** instance registers later, without exhausting the reconnect
-budget.
+Because the manager is evaluated on every poll rather than only on registry changes, it also
+recovers from a failed connection to an endpoint whose descriptor never changes — the case
+that previously stranded the server after its retry budget ran out.
+
+## Tool-list propagation
+
+The server declares the `tools.listChanged` capability and sends
+`notifications/tools/list_changed` whenever the visible catalog changes (bridge connected,
+manifest refreshed after a reconnect, bridge lost). This is required, not optional: clients
+such as VS Code call `tools/list` exactly once, immediately after `initialize`, which is
+normally before any bridge has been discovered. Without the notification such a client would
+display `0 tools` for the whole session.
+
+The notification is suppressed when the catalog signature (tool names and versions) is
+unchanged, so reconnecting to the same bridge does not churn the client. If the manifest
+arrives before the client finishes initializing, the notification is replayed from
+`oninitialized`.
 
 ---
 

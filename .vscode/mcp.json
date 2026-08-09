@@ -1,0 +1,13 @@
+{
+  "$comment": "Workspace config for developing THIS repository: runs the locally built server so changes are picked up. Run 'npm run build:server' after editing src/. For normal use outside this repo, use the published package instead - see examples/clients/vscode-mcp.json.",
+  "servers": {
+    "autodesk-mcp": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${workspaceFolder}/src/server/Autodesk.Mcp.Server/dist/index.js"],
+      "env": {
+        "AUTODESK_MCP_LOG_LEVEL": "info"
+      }
+    }
+  }
+}

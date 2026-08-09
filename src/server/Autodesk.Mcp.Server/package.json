@@ -1,6 +1,6 @@
 {
   "name": "autodesk-mcp-server",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP server exposing Civil3D.Bridge tools to MCP clients (Claude Desktop, Cursor, VS Code, Cline, ...) over the Autodesk MCP named-pipe protocol.",
   "type": "module",
   "license": "MIT",

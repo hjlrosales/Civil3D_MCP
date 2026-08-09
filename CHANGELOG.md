@@ -9,6 +9,62 @@ Version tags: `v<major>.<minor>.<patch>[-<prerelease>]` (for example `v1.0.0-rc.
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-09
+
+Persistence and reconnect hardening. Server-only: the Civil3D.Bridge plugin is
+functionally unchanged, so reinstalling the bundle is optional for this release.
+
+### Fixed
+
+- **MCP clients could stay permanently empty ("Discovered 0 tools").** The server
+  never advertised the `tools.listChanged` capability and never sent
+  `notifications/tools/list_changed`. Clients such as VS Code call `tools/list`
+  exactly once, immediately after `initialize` - which is normally a few
+  milliseconds *before* bridge discovery, handshake and manifest load complete.
+  The client received an empty catalog and was never told to refresh, so a
+  perfectly healthy bridge appeared to expose no tools for the entire session.
+  The adapter now declares the capability, pushes a notification on every catalog
+  transition, and replays it from `oninitialized` when the manifest arrives before
+  the client finishes initializing.
+- **The reconnect loop could give up for the rest of the session.** After
+  `maxReconnectAttempts` failures the manager parked in a terminal `offline` state.
+  Nothing re-armed it, because the endpoint monitor only signalled on registry
+  *changes* and the descriptor of a still-running bridge never changes. An
+  exhausted endpoint is now parked for `retryCooldownMs` and retried while it
+  stays registered with a live process; discovery is re-evaluated on every poll.
+- **`tools/list` kept advertising tools after the bridge disappeared.** The adapter
+  now drops the catalog and notifies the client when no usable bridge remains, so
+  the advertised tool list always reflects real availability.
+- **A heartbeat timeout leaked the pipe handle.** The failing client is now closed
+  explicitly instead of only being dereferenced, and close events from superseded
+  clients no longer drive the state machine (which could double-count reconnect
+  attempts).
+- **`stop()` during an in-flight handshake could leak the connection.** The
+  connection is closed if shutdown happens while connecting.
+- **The bundle zip did not extract to a loadable folder.** Its root folder lacked
+  the `.bundle` suffix that the Autodesk ApplicationPlugins loader requires, so a
+  manual (non-`--install`) install silently never auto-loaded. The archive now
+  roots everything under `Civil3D.Bridge.Bundle-<version>.bundle/`.
+
+### Added
+
+- `retryCooldownMs` option (`AUTODESK_MCP_RETRY_COOLDOWN_MS`, default 30000).
+- Lifecycle logging that narrates every transition: searching, endpoint discovered,
+  connecting, handshake succeeded, manifest loaded with tool count, tools advertised,
+  disconnected, reconnect scheduled, bridge unreachable.
+- `test/lifecycle.test.ts` (17 tests): both start-up orderings, client restart,
+  bridge restart, connection drop, exhausted retry budget, busy-loop guard, stale
+  descriptors, PID reuse, multi-instance selection and failover, absent bridge, and
+  graceful shutdown.
+- `examples/clients/vscode-mcp-local-dev.json` for running from a checkout.
+
+### Changed
+
+- `EndpointMonitor` emits `snapshot` on every poll in addition to `update` on change.
+- `BridgeManager` emits `manifestCleared` when the catalog must be withdrawn.
+- Documented "How VS Code connects to Civil 3D" in `docs/Installation.md`, including
+  diagnosis steps for "Discovered 0 tools" and what should never be necessary.
+
 ## [1.0.0] - 2026-08-08
 
 ### Changed

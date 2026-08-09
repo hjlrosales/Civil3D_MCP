@@ -131,9 +131,22 @@ describe('operational diagnostics: log correlation fields', () => {
     await startStack();
     // The manager logs the selected endpoint; assert the fields an operator needs appear.
     const joined = logs.join('\n');
-    expect(joined).toContain('Selected endpoint');
+    expect(joined).toContain('Endpoint discovered');
     expect(joined).toContain('Civil3D.Bridge');
     expect(joined).toContain('Civil3D');
+    expect(joined).toContain(bridge!.pipeName);
+  });
+
+  it('logs the whole startup lifecycle so an empty tool list is explainable', async () => {
+    await startStack();
+    const joined = logs.join('\n');
+    // Each transition an operator needs to diagnose "Discovered 0 tools".
+    expect(joined).toContain('Searching for bridge endpoints');
+    expect(joined).toContain('Endpoint discovered');
+    expect(joined).toContain('Connecting to bridge on pipe');
+    expect(joined).toContain('Handshake succeeded');
+    expect(joined).toContain('Manifest loaded');
+    expect(joined).toMatch(/\d+ tool\(s\) available/);
   });
 
   it('logs reconnection after a bridge loss with the pipe name', async () => {
@@ -142,6 +155,7 @@ describe('operational diagnostics: log correlation fields', () => {
     await new Promise((resolve) => setTimeout(resolve, 300));
     const joined = logs.join('\n');
     expect(joined).toContain('reconnect');
-    expect(joined).toContain('Connection to');
+    expect(joined).toContain('disconnected');
+    expect(joined).toContain(bridge!.pipeName);
   });
 });

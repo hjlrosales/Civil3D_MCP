@@ -7,10 +7,10 @@
   eng/scripts/sync-version.mjs - do not edit it by hand.
 -->
 <ApplicationPackage
-    SchemaVersion="1.0"
+    SchemaVersion="1.0.1"
     AutodeskProduct="Civil 3D"
     Name="Autodesk MCP Bridge for Civil 3D"
-    AppVersion="1.0.0"
+    AppVersion="1.0.1"
     Description="Hosts the Autodesk MCP bridge inside Autodesk Civil 3D 2025/2026. Loads automatically, publishes a local named-pipe endpoint and serves the tool catalog to Autodesk.MCP.Server."
     Author="Autodesk MCP Platform contributors"
     OnlineDocumentation="https://github.com/hjlrosales/Civil3D_MCP/blob/main/docs/Installation.md">

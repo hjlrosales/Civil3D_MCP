@@ -8,6 +8,12 @@
  *       PackageContents.xml
  *       Contents/                                 (dlls, docs, Configuration/)
  *   artifacts/bundles/Civil3D.Bridge.Bundle-<version>.zip
+ *       Civil3D.Bridge.Bundle-<version>.bundle/   (root folder inside the zip)
+ *
+ * The zip roots everything under a '.bundle' folder because the Autodesk ApplicationPlugins
+ * loader only discovers plugin folders whose name ends with '.bundle'. Extracting the zip
+ * straight into %APPDATA%\Autodesk\ApplicationPlugins therefore yields a folder that
+ * auto-loads, with no renaming step for the user to get wrong.
  *
  * Options:
  *   --install    additionally copy the bundle into %APPDATA%\Autodesk\ApplicationPlugins
@@ -36,6 +42,8 @@ const template = path.join(root, 'packaging', 'Civil3D.Bridge.Bundle', 'PackageC
 const publishDir = path.join(root, 'artifacts', 'bridge-publish', version);
 const bundleDir = path.join(root, 'artifacts', 'bundles', `Civil3D.Bridge.Bundle-${version}`);
 const zipPath = path.join(root, 'artifacts', 'bundles', `Civil3D.Bridge.Bundle-${version}.zip`);
+/** The loader-visible folder name; must end with '.bundle' to be auto-discovered. */
+const installedFolderName = `Civil3D.Bridge.Bundle-${version}.bundle`;
 
 if (!existsSync(template)) {
   console.error(`Missing bundle template: ${path.relative(root, template)}`);
@@ -95,7 +103,7 @@ console.log(`[bundle] ${contents.length} managed assemblies in Contents/`);
 if (!noZip) {
   console.log('[bundle] zipping bundle');
   rmSync(zipPath, { force: true });
-  createZip(bundleDir, zipPath);
+  createZip(bundleDir, zipPath, installedFolderName);
   const kb = Math.round(statSync(zipPath).size / 1024);
   console.log(`[bundle] wrote ${path.relative(root, zipPath)} (${kb} KB)`);
 }
@@ -119,7 +127,7 @@ function installToApplicationPlugins(sourceDir, bundleVersion) {
   }
   // The Autodesk ApplicationPlugins loader only discovers folders whose name ends with
   // '.bundle', so the installed folder must carry that suffix even though the build artifact
-  // folder and zip keep the plain `Civil3D.Bridge.Bundle-<version>` name.
+  // folder keeps the plain `Civil3D.Bridge.Bundle-<version>` name.
   const target = path.join(appData, 'Autodesk', 'ApplicationPlugins', `Civil3D.Bridge.Bundle-${bundleVersion}.bundle`);
   console.log(`[bundle] installing to ${target}`);
   rmSync(target, { recursive: true, force: true });
@@ -130,15 +138,18 @@ function installToApplicationPlugins(sourceDir, bundleVersion) {
 /**
  * Minimal STORE-method ZIP writer (no external dependencies). Bundle payloads are
  * already-compressed DLLs/XML, so STORE is acceptable and keeps the script portable.
+ * Every entry is placed under `rootFolder` so the archive extracts into a ready-to-load
+ * `<name>.bundle` directory.
  */
-function createZip(dir, outZip) {
+function createZip(dir, outZip, rootFolder) {
   const files = collectFiles(dir);
   const parts = [];
   const central = [];
   let offset = 0;
 
   for (const file of files) {
-    const rel = path.relative(dir, file).split(path.sep).join('/');
+    const relative = path.relative(dir, file).split(path.sep).join('/');
+    const rel = `${rootFolder}/${relative}`;
     const data = readFileSync(file);
     const nameBuffer = Buffer.from(rel, 'utf8');
     const crc = crc32(data);

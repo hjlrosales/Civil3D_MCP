@@ -1,0 +1,13 @@
+{
+  "$comment": "LOCAL DEVELOPMENT ONLY - do not ship this to users. Runs the server from a repository checkout instead of the published npm package. Replace <REPO> with the absolute path to your clone and run 'npm run build:server' first; VS Code launches the compiled dist/index.js, so an out-of-date build will run stale code. The production configuration is examples/clients/vscode-mcp.json.",
+  "servers": {
+    "autodesk-mcp-dev": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["<REPO>/src/server/Autodesk.Mcp.Server/dist/index.js"],
+      "env": {
+        "AUTODESK_MCP_LOG_LEVEL": "debug"
+      }
+    }
+  }
+}

@@ -78,6 +78,7 @@ describe('MCP integration (discovery to protocol response)', () => {
     });
 
     manager.on('manifest', (manifest: Parameters<McpAdapter['updateManifest']>[0]) => adapter!.updateManifest(manifest));
+    manager.on('manifestCleared', () => adapter!.clearManifest());
     manager.on('progress', (progress: Parameters<McpAdapter['handleBridgeProgress']>[0]) => adapter!.handleBridgeProgress(progress));
 
     const pair = InMemoryTransport.createLinkedPair();

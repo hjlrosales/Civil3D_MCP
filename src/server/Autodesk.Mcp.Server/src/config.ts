@@ -15,8 +15,10 @@ export interface ServerConfig {
   preferredBridge?: string;
   /** Base reconnect delay in milliseconds (doubles on each failed attempt). */
   reconnectDelayMs: number;
-  /** Maximum reconnect attempts before giving up (0 = retry forever). */
+  /** Reconnect attempts per burst before the endpoint is parked for the cooldown (0 = never park). */
   maxReconnectAttempts: number;
+  /** How long an unreachable-but-registered endpoint is left alone before discovery retries it. */
+  retryCooldownMs: number;
   /** Per-request timeout in milliseconds. */
   requestTimeoutMs: number;
   /** Heartbeat interval in milliseconds (0 disables). */
@@ -33,6 +35,7 @@ const DEFAULTS: ServerConfig = {
   endpointsDir: defaultEndpointsDir(),
   reconnectDelayMs: 1_000,
   maxReconnectAttempts: 10,
+  retryCooldownMs: 30_000,
   requestTimeoutMs: 30_000,
   heartbeatIntervalMs: 15_000,
   endpointsPollIntervalMs: 3_000,
@@ -71,6 +74,9 @@ export function loadConfigFile(filePath: string): Partial<ServerConfig> | null {
     }
     if (raw.maxReconnectAttempts !== undefined) {
       partial.maxReconnectAttempts = readNumber(raw.maxReconnectAttempts, DEFAULTS.maxReconnectAttempts);
+    }
+    if (raw.retryCooldownMs !== undefined) {
+      partial.retryCooldownMs = readNumber(raw.retryCooldownMs, DEFAULTS.retryCooldownMs);
     }
     if (raw.requestTimeoutMs !== undefined) {
       partial.requestTimeoutMs = readNumber(raw.requestTimeoutMs, DEFAULTS.requestTimeoutMs);
@@ -118,6 +124,7 @@ export function loadConfig(filePath?: string): ServerConfig {
 
   const reconnectDelayMs = readNumber(env.AUTODESK_MCP_RECONNECT_DELAY_MS, config.reconnectDelayMs);
   const maxReconnectAttempts = readNumber(env.AUTODESK_MCP_MAX_RECONNECT_ATTEMPTS, config.maxReconnectAttempts);
+  const retryCooldownMs = readNumber(env.AUTODESK_MCP_RETRY_COOLDOWN_MS, config.retryCooldownMs);
   const requestTimeoutMs = readNumber(env.AUTODESK_MCP_REQUEST_TIMEOUT_MS, config.requestTimeoutMs);
   const heartbeatIntervalMs = readNumber(env.AUTODESK_MCP_HEARTBEAT_INTERVAL_MS, config.heartbeatIntervalMs);
   const endpointsPollIntervalMs = readNumber(env.AUTODESK_MCP_ENDPOINTS_POLL_INTERVAL_MS, config.endpointsPollIntervalMs);
@@ -126,6 +133,9 @@ export function loadConfig(filePath?: string): ServerConfig {
   }
   if (env.AUTODESK_MCP_MAX_RECONNECT_ATTEMPTS !== undefined) {
     config.maxReconnectAttempts = maxReconnectAttempts;
+  }
+  if (env.AUTODESK_MCP_RETRY_COOLDOWN_MS !== undefined) {
+    config.retryCooldownMs = retryCooldownMs;
   }
   if (env.AUTODESK_MCP_REQUEST_TIMEOUT_MS !== undefined) {
     config.requestTimeoutMs = requestTimeoutMs;

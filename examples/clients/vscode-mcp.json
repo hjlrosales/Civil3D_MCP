@@ -1,10 +1,10 @@
 {
-  "$comment": "VS Code: save as .vscode/mcp.json in your workspace (or use the MCP extension UI), then reload the window. The servers key is what the VS Code MCP extension expects.",
+  "$comment": "VS Code: save as .vscode/mcp.json in your workspace, or add the same block under 'mcp.servers' in your User settings.json to make it available everywhere. Reload the window afterwards. This launches the published npm package, so it does not depend on a repository checkout, a working directory, a build folder or an open terminal. Civil 3D does not need to be running when VS Code starts: the server keeps watching for the bridge and tools appear automatically once Civil 3D is up.",
   "servers": {
     "autodesk-mcp": {
       "type": "stdio",
       "command": "npx",
-      "args": ["-y", "autodesk-mcp-server"],
+      "args": ["-y", "autodesk-mcp-server@latest"],
       "env": {}
     }
   }

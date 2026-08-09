@@ -58,9 +58,14 @@ loads anything placed in this special folder.
      *(Tip: `%APPDATA%` is just Windows' shorthand for "your personal AppData
      folder". Windows understands it if you type it into the address bar.)*
 
-  4. Copy the whole `Civil3D.Bridge.Bundle-<version>` folder you unzipped into
-     this window. When you look inside it, you should see a file called
+  4. Copy the whole `Civil3D.Bridge.Bundle-<version>.bundle` folder you unzipped
+     into this window. When you look inside it, you should see a file called
      `PackageContents.xml` right there at the top.
+
+     > **The `.bundle` ending matters.** Civil 3D only looks at folders whose name
+     > ends with `.bundle`. If you rename the folder and drop that ending, the
+     > plugin will sit there and never load. The zip already has the right name —
+     > just don't change it.
 
 **Step 4: Restart Civil 3D.** Close it completely, then open it again. The plugin
 loads automatically — you don't need to click anything.
@@ -186,13 +191,126 @@ something simple, like: *"What is in the current drawing?"*
 
 ---
 
+## How VS Code connects to Civil 3D
+
+This section explains the whole chain, so that when something looks wrong you know
+exactly which link to check.
+
+### The normal, everyday flow
+
+1. **Install the Bridge bundle once.** Copy
+   `Civil3D.Bridge.Bundle-<version>.bundle` into
+   `%APPDATA%\Autodesk\ApplicationPlugins`. You never do this again until you
+   update.
+2. **Start Civil 3D normally.** The bundle's `PackageContents.xml` says
+   `LoadOnAutoCADStartup="True"`, so Civil 3D loads the Bridge by itself. You do
+   **not** run `NETLOAD`.
+3. **The Bridge announces itself.** It opens a private named pipe and writes a
+   small "I'm here" file into `%LOCALAPPDATA%\AutodeskMcp\endpoints`, named
+   `Civil3D-<process id>.json`. It keeps a heartbeat timestamp fresh inside it.
+4. **Start VS Code normally.** VS Code reads `.vscode/mcp.json` (or your user
+   settings) and launches the MCP server.
+5. **The server finds the Bridge.** It scans the endpoints folder every 3 seconds,
+   picks the best endpoint, connects over the pipe, performs the handshake, and
+   downloads the tool catalog.
+6. **Tools appear in VS Code.** The server sends a `tools/list_changed`
+   notification, and VS Code refreshes its tool list.
+
+**The order does not matter.** Civil 3D first or VS Code first both work.
+
+### What happens when Civil 3D is closed
+
+The Bridge's endpoint file goes away. Within a few seconds the server notices,
+drops the tool catalog, tells VS Code the tool list changed, and reports `0 tools`.
+The server itself stays running and healthy — it just goes back to watching. You do
+not need to restart VS Code.
+
+### What happens when Civil 3D restarts
+
+The new Civil 3D process writes a new endpoint file with a new process id and a new
+pipe. The server picks it up on its next scan, connects, reloads the catalog, and
+notifies VS Code. Tools come back on their own.
+
+If several Civil 3D instances are running, the server connects to the one that
+started most recently, and falls back to another live instance if that one closes.
+
+### Diagnosing "Discovered 0 tools"
+
+Work down this list — each step tells you which link is broken.
+
+1. **Is Civil 3D actually running?** Zero tools is the correct answer when it
+   isn't. Start it and wait a few seconds.
+2. **Did the Bridge load?** Open `%LOCALAPPDATA%\AutodeskMcp\endpoints`. There
+   should be a `Civil3D-<pid>.json` file.
+   - **No file** → the Bridge did not load. Check that the folder in
+     `%APPDATA%\Autodesk\ApplicationPlugins` ends in `.bundle`, and read
+     `%LOCALAPPDATA%\AutodeskMcp\logs\civil3d-bridge-*.log`.
+   - **A file is there** → the Bridge is fine; continue.
+3. **Is the file current?** Open it. The `pid` should match a running `acad.exe`
+   (Task Manager → Details), and `lastHeartbeatAtUtc` should be recent. A file left
+   behind by a crashed Civil 3D is cleaned up automatically on the next scan.
+4. **What does the server say?** In VS Code, open the MCP server output. The server
+   logs every step: `Searching for bridge endpoints`, `Endpoint discovered`,
+   `Connecting to bridge on pipe`, `Handshake succeeded`, `Manifest loaded ... N
+   tool(s) available`. Whichever line is missing tells you where it stopped.
+5. **Is VS Code running the version you think?** `npx -y autodesk-mcp-server@latest`
+   picks up the newest published build. The startup log line reports the version.
+
+### Verifying each piece by hand
+
+**The Bridge endpoint:**
+
+```
+type %LOCALAPPDATA%\AutodeskMcp\endpoints\Civil3D-*.json
+```
+
+**The MCP server** (outside VS Code, to see its log directly):
+
+```
+npx -y autodesk-mcp-server@latest
+```
+
+It should print `Searching for bridge endpoints`, then `Endpoint discovered` and
+`Manifest loaded ... N tool(s) available`. Press `Ctrl+C` to stop it.
+
+### What should NOT be necessary
+
+If you find yourself doing any of these, something is misconfigured — these are not
+part of normal use:
+
+- Running `NETLOAD` in Civil 3D. Ever, after the one-time bundle install.
+- Restarting VS Code because Civil 3D was closed and reopened.
+- Restarting Civil 3D because VS Code was closed and reopened.
+- Deleting endpoint files by hand.
+- Starting Civil 3D and VS Code in a particular order.
+- Keeping a terminal open, or running `npm` before starting VS Code.
+
+### One-time Windows / Civil 3D setup
+
+For the normal per-user install into `%APPDATA%\Autodesk\ApplicationPlugins`
+there is **no** extra trust or security configuration to do — that folder is
+already a trusted load path for Civil 3D.
+
+Two situations do need a one-time step:
+
+- **You installed the bundle somewhere else** (for example a shared network
+  folder). Add that folder to Civil 3D's trusted locations: type `OPTIONS`, go to
+  **Files → Trusted Locations**, and add it. Otherwise Civil 3D blocks the load or
+  prompts on every start.
+- **The files came from the internet and Windows marked them as blocked.** Right-
+  click the downloaded `.zip` → **Properties** → tick **Unblock** → **OK**, and
+  *then* extract it. If you extracted first, the individual DLLs carry the block
+  and the plugin fails to load silently.
+
+---
+
 ## 5. Update
 
 ### Bridge (the Civil 3D plugin)
 
 1. Close Civil 3D completely.
 2. Download the new plugin folder (same steps as [section 2](#2-install-the-bridge-the-civil-3d-plugin)).
-3. Replace the old folder: delete the old `Civil3D.Bridge.Bundle-<old version>`
+3. Replace the old folder: delete the old `Civil3D.Bridge.Bundle-<old version>.bundle`
    folder in `%APPDATA%\Autodesk\ApplicationPlugins`, then copy the new one in its
    place. (Deleting the old one avoids confusion between two versions.)
 4. Open Civil 3D again. It loads the new version automatically.

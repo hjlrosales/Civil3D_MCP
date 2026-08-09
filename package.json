@@ -1,6 +1,6 @@
 {
   "name": "autodesk-mcp-platform",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Monorepo orchestration for the Autodesk MCP Platform (Civil3D.Bridge + Autodesk.MCP.Server).",
   "license": "MIT",

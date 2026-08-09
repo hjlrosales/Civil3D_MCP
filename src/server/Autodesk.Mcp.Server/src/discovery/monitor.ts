@@ -11,9 +11,16 @@ export interface EndpointMonitorOptions {
 }
 
 /**
- * Polls the endpoints registry and emits 'update' with the current endpoint set whenever it
- * changes. Drives bridge discovery: bridges appear when their descriptor file is written,
- * disappear when it is removed, and stale files are cleaned up on each poll.
+ * Polls the endpoints registry and reports what it finds. Drives bridge discovery: bridges appear
+ * when their descriptor file is written, disappear when it is removed, and stale files are cleaned
+ * up on each poll.
+ *
+ * Two events are emitted because the consumer needs both views:
+ * - 'snapshot' fires on every poll with the current endpoint set. The manager uses it to re-attempt
+ *   a connection to an endpoint that is still registered but was not reachable earlier; a
+ *   change-only event would strand the manager whenever a connection failed without the registry
+ *   changing.
+ * - 'update' fires only when the endpoint set changed, for logging and change-driven consumers.
  */
 export class EndpointMonitor extends EventEmitter {
   private readonly options: Required<Pick<EndpointMonitorOptions, 'endpointsDir' | 'pollIntervalMs' | 'cleanupStale'>> &
@@ -65,5 +72,6 @@ export class EndpointMonitor extends EventEmitter {
       this.fingerprint = fingerprint;
       this.emit('update', endpoints);
     }
+    this.emit('snapshot', endpoints);
   }
 }

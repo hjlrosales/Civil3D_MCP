@@ -22,7 +22,8 @@ environment variable to the file path. A missing or malformed file is ignored
 | `preferredProduct` | - | restrict selection to this product (e.g. `Civil3D`) |
 | `preferredBridge` | - | prefer this logical bridge name |
 | `reconnectDelayMs` | `1000` | base reconnect delay; doubles per failed attempt |
-| `maxReconnectAttempts` | `10` | attempts before giving up (`0` = retry forever) |
+| `maxReconnectAttempts` | `10` | attempts in one burst before the endpoint is parked (`0` = keep retrying in the same burst) |
+| `retryCooldownMs` | `30000` | how long a parked endpoint is left alone before discovery retries it |
 | `requestTimeoutMs` | `30000` | per-request bridge timeout |
 | `heartbeatIntervalMs` | `15000` | `health/ping` interval (`0` disables) |
 | `endpointsPollIntervalMs` | `3000` | registry polling interval |
@@ -39,6 +40,7 @@ environment variable to the file path. A missing or malformed file is ignored
 | `AUTODESK_MCP_PREFERRED_BRIDGE` | `preferredBridge` |
 | `AUTODESK_MCP_RECONNECT_DELAY_MS` | `reconnectDelayMs` |
 | `AUTODESK_MCP_MAX_RECONNECT_ATTEMPTS` | `maxReconnectAttempts` |
+| `AUTODESK_MCP_RETRY_COOLDOWN_MS` | `retryCooldownMs` |
 | `AUTODESK_MCP_REQUEST_TIMEOUT_MS` | `requestTimeoutMs` |
 | `AUTODESK_MCP_HEARTBEAT_INTERVAL_MS` | `heartbeatIntervalMs` |
 | `AUTODESK_MCP_ENDPOINTS_POLL_INTERVAL_MS` | `endpointsPollIntervalMs` |
