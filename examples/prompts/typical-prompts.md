@@ -40,6 +40,12 @@ running and the client has discovered the tools.
   PN10, starting at easting 1000, northing 2000, elevation 95.5." (requires
   confirmation; the part is matched against the network's parts list, so the
   network must already have a matching HDPE/SDR17/PN10 pipe part family)
+- "Create a pipe network named 'Storm 2' with HDPE, PVC and RCP part families so
+  I can build it out."
+- "Change pipe 29418 to 300 mm diameter."
+- "Set the start and end elevation of pipe 29418 to 96.0 and 95.5."
+- "Extend pipe 29418 to 25 meters."
+- "Delete pipe 29418 and save the drawing."
 
 ## Quantities & earthwork
 
@@ -53,6 +59,8 @@ running and the client has discovered the tools.
 - "Rename alignment 'Old Name' to 'New Name'."
 - "Add a profile vertical curve to alignment 'Main Road' at station 1+250."
 - "Create a horizontal 10 m HDPE pipe, 200 mm SDR17 PN10, in the Storm network."
+- "Resize pipe 29418 to 300 mm and lower its end elevation to 94.0."
+- "Delete pipe 29419 from the Storm network and save."
 
 ## Export
 

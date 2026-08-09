@@ -113,8 +113,10 @@ The real implementations are the only code that touches Autodesk. They must:
 > base to reference Autodesk assemblies and would make every tool test require a running Civil 3D.
 > Keeping contracts Autodesk-free means tools, the base and all tests run headless; the Autodesk code
 > is isolated in the service implementations — exactly the isolation the architecture mandates.
-> Future editing domains add their own contracts (e.g. a transaction-capable alignment service) the
-> same way.
+> Editing domains follow the same rule through the command framework: tools depend on
+> Autodesk-free service contracts (`ICreatePipeService`, `IUpdatePipeService`, ...) whose real
+> implementations (and the write repositories) live behind the discipline boundary — see
+> `docs/EDITING-TOOLS.md`.
 
 ### Step 4 — Create the output DTO
 
@@ -177,8 +179,9 @@ strings as error channels — pick the closest stable code.
   `GenerateDocumentationFile`, so missing docs fail the build).
 - Read the Autodesk API once per invocation; cache only values proven safe (the fingerprint enables
   future caching).
-- Read-only tools use read-only transactions; editing tools (future phases) will take a
-  `DocumentLock` and commit/rollback explicitly.
+- Read-only tools use read-only transactions; editing tools run through the command framework's
+  document-locked write transactions (begin → handler → commit | rollback) — never raw
+  `DocumentLock`/`TransactionManager` calls in a tool.
 
 ---
 

@@ -5,7 +5,9 @@
 **Scope:** The reusable command execution infrastructure (`Civil3D.Domain.Commands`), the
 write-transaction pipeline, validators, confirmation/permission checks, domain events, the tool
 base (`Civil3D.Tools.Commands`) and the Autodesk-backed write transaction provider in the Bridge.
-No production editing commands exist yet — those arrive in Phase 5B and must use this framework.
+This framework backs every production editing command — the rename tools (Phase 5B),
+`create_pipe` / `create_pipe_network` (Phase 5C), `update_pipe` (Phase 5D) and `delete_pipe`
+(Phase 5E) — see `docs/EDITING-TOOLS.md` for the concrete tools.
 
 ---
 

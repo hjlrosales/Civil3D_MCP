@@ -1,11 +1,12 @@
-# Autodesk MCP Platform — Editing Tools (Phase 5B/5C)
+# Autodesk MCP Platform — Editing Tools (Phase 5B–5E)
 
 **Status:** Implemented
-**Date:** 2026-08-09 (Phase 5C: `create_pipe` + multi-material pipe support with SDR/PN validation)
-**Scope:** The first production editing commands — `rename_alignment` and `rename_surface`
-(Phase 5B), and the first *creation* command, `create_pipe` (Phase 5C) — exercising the complete
-write pipeline end-to-end. This document is the standard reference for all future write
-operations.
+**Date:** 2026-08-09 (Phase 5E: `delete_pipe` — full create/update/delete pipe lifecycle)
+**Scope:** The production editing commands — `rename_alignment` and `rename_surface`
+(Phase 5B), the first *creation* command `create_pipe` with multi-material pipe support
+(Phase 5C), `create_pipe_network` (Phase 5C), `update_pipe` (Phase 5D), and `delete_pipe`
+(Phase 5E) — exercising the complete write pipeline end-to-end. This document is the standard
+reference for all future write operations.
 
 ---
 
@@ -231,7 +232,38 @@ like rename's `E_OBJECT_NOT_FOUND` for a missing alignment/surface id.
 
 ---
 
-## 11. `delete_pipe`
+## 11. `update_pipe` (Phase 5D)
+
+The in-place counterpart to `create_pipe`: changes an existing pipe's elevation, diameter or
+length by its stable numeric id through the same command pipeline. The repository opens the pipe
+by handle for write and applies only the requested changes (omitted changes keep the pipe's
+current value; at least one change is required):
+
+- **Elevation** — `elevationMeters` moves both endpoints to the given elevation in Z, so the
+  pipe stays horizontal at the new elevation.
+- **Length** — `lengthMeters` moves the end point along the pipe's current horizontal bearing so
+  the center-to-center length becomes the requested value; the start point stays fixed and the
+  end elevation is preserved.
+- **Diameter** — `diameterMm` re-sizes the pipe via
+  `Pipe.ResizeByInnerDiameterOrWidth(..., useClosestSize: true)`, the same native snapping the
+  create path uses.
+
+The update runs inside the write transaction (a failure rolls it back atomically) and raises
+`PartUpdated`. The pipe id, current geometry, part size and the list of applied changes are read
+back inside the transaction and returned in `UpdatePipeResult`, so callers always see the
+post-update state.
+
+| Failure | Domain code | Protocol code |
+|---|---|---|
+| Pipe id not positive | validator | `E_VALIDATION_FAILED` |
+| Pipe missing | `EntityNotFound` | `E_OBJECT_NOT_FOUND` |
+| No change requested (no elevation/diameter/length) | validator | `E_VALIDATION_FAILED` |
+| Non-positive diameter / length | validator | `E_VALIDATION_FAILED` |
+| Civil 3D rejects the change | `TransactionFailed` | `E_TRANSACTION_FAILED` |
+
+---
+
+## 12. `delete_pipe` (Phase 5E)
 
 The counterpart to `create_pipe`: removes an existing pipe from its network by the stable
 numeric id (returned by `create_pipe` or `list_pipe_networks`) through the same command
@@ -246,3 +278,20 @@ it back atomically. After the command commits, the tool best-effort saves the dr
 | Pipe id not positive | validator | `E_VALIDATION_FAILED` |
 | Pipe missing | `EntityNotFound` | `E_OBJECT_NOT_FOUND` |
 | Civil 3D rejects the erasure | `TransactionFailed` | `E_TRANSACTION_FAILED` |
+
+---
+
+## 13. `create_pipe_network` (Phase 5C)
+
+The network factory: creates a new pipe network plus a parts list seeded with the requested
+pipe material families. Materials resolve through the shared `PipeMaterials` catalog (HDPE,
+PVC, Ductile Iron, Concrete/RCP, Corrugated HDPE, Corrugated Metal, ...), so a single network
+can carry multiple materials. Family sizes default to a sane range per family when the catalog
+install omits them. The network and parts list are created inside the write transaction; the
+result returns the new network id, its parts list name and the families added/failed.
+
+| Failure | Domain code | Protocol code |
+|---|---|---|
+| Network name empty / already exists | validator / `DuplicateName` | `E_VALIDATION_FAILED` |
+| No materials resolvable from the catalog | `PartNotFound` | `E_VALIDATION_FAILED` |
+| Civil 3D rejects the creation | `TransactionFailed` | `E_TRANSACTION_FAILED` |

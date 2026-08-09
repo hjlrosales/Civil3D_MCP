@@ -48,6 +48,20 @@ See `docs/QuickStart.md` and `docs/Installation.md` for the full walkthrough.
 | `docs/PERFORMANCE-BENCHMARKS.md` | measured metrics + how to run them |
 | `docs/ARCHITECTURE.md` | full design, ADRs, sequence diagrams |
 | `docs/FAQ.md` | frequently asked questions |
+| `docs/EDITING-TOOLS.md` | editing commands: rename, create/update/delete pipe, pipe networks |
+| `docs/COMMAND-FRAMEWORK.md` | write-transaction pipeline, validation, confirmation, events |
+| `docs/TOOL-DEVELOPMENT.md` | the standard for building/registering/testing a tool |
+| `docs/DOMAIN-LAYER.md` | domain projects, services, repositories, DTO conventions |
+| `docs/QUERY-FRAMEWORK.md` | filtering/sorting/pagination for list/search tools |
+| `docs/WORKFLOW-FRAMEWORK.md` | multi-step engineering workflow framework |
+| `docs/DRAWING-HEALTH-REPORT.md` | `drawing_health_report` workflow |
+| `docs/PROJECT-SUMMARY-REPORT.md` | `project_summary_report` workflow |
+| `docs/DESIGN-VALIDATION.md` | `design_validation_report` rules & engine |
+| `docs/QUANTITY-TAKEOFF.md` | `quantity_takeoff_report` workflow |
+| `docs/SURFACE-COMPARISON.md` | `surface_comparison_report` workflow |
+| `docs/CUT-FILL.md` | `cut_fill_report` workflow |
+| `docs/CORRIDOR-ANALYSIS.md` | `corridor_analysis_report` workflow |
+| `docs/LANDXML-EXPORT.md` | `export_landxml` workflow |
 
 ## Examples
 
