@@ -43,7 +43,7 @@ public class CreatePipeNetworkToolTests
         Assert.Equal("Sanitary", result.Name);
         Assert.Equal("Test network", result.Description);
         Assert.Equal("Sanitary Parts List", result.PartsListName);
-        Assert.Equal(new[] { "HDPE Pipe", "PVC Pipe" }, result.FamiliesAdded);
+        Assert.Equal(new[] { "HDPE Pipe SI", "PVC Pipe SI" }, result.FamiliesAdded);
         Assert.Empty(result.FamiliesFailed);
         Assert.Contains(c.Drawing.Networks, n => n.Name == "Sanitary");
         Assert.Contains(c.Events.Published, e => e is Civil3D.Domain.Commands.NetworkCreated { NetworkName: "Sanitary" });
@@ -59,7 +59,23 @@ public class CreatePipeNetworkToolTests
         CreatePipeNetworkResult result = await CreateNetworkAsync(c, new CreatePipeNetworkRequest { Name = "Main" });
 
         Assert.True(result.Success);
-        Assert.Contains("HDPE Pipe", result.FamiliesAdded);
+        Assert.Contains("HDPE Pipe SI", result.FamiliesAdded);
+    }
+
+    [Fact]
+    public async Task CreateNetwork_RcpMaterial_ResolvesToConcreteFamily()
+    {
+        Container c = Create();
+
+        CreatePipeNetworkResult result = await CreateNetworkAsync(c, new CreatePipeNetworkRequest
+        {
+            Name = "Sanitary",
+            Materials = ["RCP"],
+        });
+
+        Assert.True(result.Success);
+        Assert.Equal(new[] { "Concrete Pipe SI" }, result.FamiliesAdded);
+        Assert.Empty(result.FamiliesFailed);
     }
 
     [Fact]

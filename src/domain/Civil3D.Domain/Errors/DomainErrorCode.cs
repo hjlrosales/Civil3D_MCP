@@ -23,6 +23,9 @@ public enum DomainErrorCode
     /// <summary>No pipe network part (family or size) matches the requested criteria, or the match is ambiguous.</summary>
     PartNotFound,
 
+    /// <summary>A requested change could not be applied because of the entity's current state (for example a zero-length pipe whose length cannot be rescaled).</summary>
+    ValidationFailed,
+
     /// <summary>A read-only query against the Autodesk database failed.</summary>
     TransactionFailed,
 

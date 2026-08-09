@@ -22,7 +22,10 @@ namespace Civil3D.Tools.Editing.Tools;
     "Creates a straight pipe in an existing pipe network. The pipe part is resolved by matching " +
     "(case-insensitive, substring) against the pipe part family descriptions already assigned to " +
     "the network's parts list: supply Material (and optionally Sdr / PressureClassBar, for " +
-    "example HDPE / 17 / 10) or an explicit PartFamilyMatch. The closest available size to " +
+    "example HDPE / 17 / 10) or an explicit PartFamilyMatch. Material-aware rating validation " +
+    "rejects SDR/PN values that are not standard for the material (for example SDR on Ductile " +
+    "Iron, or SDR 99 on HDPE); unknown materials skip rating validation. The closest available " +
+    "size to " +
     "DiameterMm is selected automatically. The pipe runs horizontally (constant elevation) for " +
     "LengthMeters starting at (StartEasting, StartNorthing, StartElevation), in the plan " +
     "direction DirectionDegrees (0 = +Easting axis, counter-clockwise). Fails with " +
@@ -71,6 +74,8 @@ public sealed class CreatePipeTool : CommandToolBase<CreatePipeRequest, CreatePi
             NetworkName = input.NetworkName,
             PartFamilyMatch = partFamilyMatch,
             Material = string.IsNullOrWhiteSpace(input.Material) ? null : input.Material.Trim(),
+            Sdr = string.IsNullOrWhiteSpace(input.Sdr) ? null : input.Sdr.Trim(),
+            PressureClassBar = input.PressureClassBar,
             DiameterMm = input.DiameterMm,
             LengthMeters = input.LengthMeters,
             StartEasting = input.StartEasting,

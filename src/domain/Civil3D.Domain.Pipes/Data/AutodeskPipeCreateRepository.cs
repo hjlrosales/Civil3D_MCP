@@ -6,6 +6,7 @@ using Civil3D.Domain.Commands.Transactions;
 using Civil3D.Domain.Data;
 using Civil3D.Domain.Errors;
 using Civil3D.Domain.Pipes.Dtos;
+using Civil3D.Domain.Pipes.Materials;
 using Civil3D.Domain.Pipes.Repositories;
 
 namespace Civil3D.Domain.Pipes.Data;
@@ -142,6 +143,25 @@ public sealed class AutodeskPipeCreateRepository : IPipeCreateRepository
                 if (family.Description.Contains(fallbackMatch, StringComparison.OrdinalIgnoreCase))
                 {
                     matches.Add((familyId, family.Description));
+                }
+            }
+        }
+
+        if (matches.Count == 0 && !string.IsNullOrWhiteSpace(fallbackMatch))
+        {
+            // Aliases (for example "RCP" -> Concrete, "DI" -> Ductile Iron) usually do not appear
+            // in the family description; retry with the canonical material name from the catalog.
+            string? canonical = PipeMaterials.Resolve(fallbackMatch)?.Name;
+            if (!string.IsNullOrWhiteSpace(canonical)
+                && !canonical.Equals(fallbackMatch.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                foreach (ObjectId familyId in familyIds)
+                {
+                    var family = (PartFamily)tx.GetObject(familyId, OpenMode.ForRead);
+                    if (family.Description.Contains(canonical, StringComparison.OrdinalIgnoreCase))
+                    {
+                        matches.Add((familyId, family.Description));
+                    }
                 }
             }
         }

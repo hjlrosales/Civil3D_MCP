@@ -53,6 +53,24 @@ public sealed record ObjectRenamed(string ObjectType, long ObjectId, string Prev
 /// <param name="SessionId">Session of the originating request, when present.</param>
 public sealed record PartCreated(string PartType, long PartId, long NetworkId, string Name, string CorrelationId, string? SessionId) : IDomainEvent;
 
+/// <summary>Published after an existing part was modified in a committed write transaction.</summary>
+/// <param name="PartType">The part kind (for example "pipe" or "structure").</param>
+/// <param name="PartId">Stable numeric id of the updated part.</param>
+/// <param name="NetworkId">Stable numeric id of the owning network.</param>
+/// <param name="Name">The part name.</param>
+/// <param name="CorrelationId">Correlation of the originating request.</param>
+/// <param name="SessionId">Session of the originating request, when present.</param>
+public sealed record PartUpdated(string PartType, long PartId, long NetworkId, string Name, string CorrelationId, string? SessionId) : IDomainEvent;
+
+/// <summary>Published after an existing part was deleted in a committed write transaction.</summary>
+/// <param name="PartType">The part kind (for example "pipe" or "structure").</param>
+/// <param name="PartId">Stable numeric id of the deleted part.</param>
+/// <param name="NetworkId">Stable numeric id of the owning network.</param>
+/// <param name="Name">The part name (read back before deletion).</param>
+/// <param name="CorrelationId">Correlation of the originating request.</param>
+/// <param name="SessionId">Session of the originating request, when present.</param>
+public sealed record PartDeleted(string PartType, long PartId, long NetworkId, string Name, string CorrelationId, string? SessionId) : IDomainEvent;
+
 /// <summary>Published after a new pipe network was created in a committed write transaction.</summary>
 /// <param name="NetworkName">The name of the created network.</param>
 /// <param name="NetworkId">Stable numeric id of the created network.</param>

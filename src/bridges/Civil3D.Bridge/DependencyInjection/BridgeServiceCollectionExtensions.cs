@@ -203,6 +203,23 @@ public static class BridgeServiceCollectionExtensions
         services.AddTransient<ICommandHandler<CreatePipeNetworkCommand, CreatePipeNetworkResult>, CreatePipeNetworkCommandHandler>();
         services.AddTransient<ICommandValidator<CreatePipeNetworkCommand>, CreatePipeNetworkCommandValidator>();
 
+        // update_pipe: the pipe update write repository and service, plus the command handler and
+        // structural validator. The repository resolves the pipe by its stable numeric id inside
+        // the write transaction and throws EntityNotFound when it is missing.
+        services.AddSingleton<IPipeUpdateRepository, AutodeskPipeUpdateRepository>();
+        services.AddSingleton<IUpdatePipeService, UpdatePipeService>();
+        services.AddTransient<ICommandHandler<UpdatePipeCommand, UpdatePipeResult>, UpdatePipeCommandHandler>();
+        services.AddTransient<ICommandValidator<UpdatePipeCommand>, UpdatePipeCommandValidator>();
+
+        // delete_pipe: the pipe delete write repository and service, plus the command handler and
+        // structural validator. The repository resolves the pipe by its stable numeric id inside
+        // the write transaction and erases it via Pipe.Erase(); the tool then best-effort saves
+        // the drawing (reusing ISaveDrawingService) so the deletion persists.
+        services.AddSingleton<IPipeDeleteRepository, AutodeskPipeDeleteRepository>();
+        services.AddSingleton<IDeletePipeService, DeletePipeService>();
+        services.AddTransient<ICommandHandler<DeletePipeCommand, DeletePipeResult>, DeletePipeCommandHandler>();
+        services.AddTransient<ICommandValidator<DeletePipeCommand>, DeletePipeCommandValidator>();
+
         // Workflow framework (Phase 7A): the dispatcher pipeline, progress, timeout/cancellation
         // and events are infrastructure; handlers and validators for engineering workflows
         // register here like the editing commands above.

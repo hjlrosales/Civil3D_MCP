@@ -42,6 +42,12 @@ public sealed class CreatePipeCommand : ICommand<CreatePipeResult>
     /// </summary>
     public string? Material { get; init; }
 
+    /// <summary>Standard Dimension Ratio (for example "17"), when the material is SDR-rated.</summary>
+    public string? Sdr { get; init; }
+
+    /// <summary>Nominal pressure class in bar (for example 10 for PN10), when the material is pressure-rated.</summary>
+    public double? PressureClassBar { get; init; }
+
     /// <summary>Target nominal/inner diameter in millimeters.</summary>
     public double DiameterMm { get; init; }
 

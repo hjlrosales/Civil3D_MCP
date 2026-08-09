@@ -34,7 +34,10 @@ internal static class EditingTestHarness
         RenameAlignmentTool AlignmentTool,
         RenameSurfaceTool SurfaceTool,
         CreatePipeTool CreatePipeTool,
-        CreatePipeNetworkTool CreatePipeNetworkTool);
+        CreatePipeNetworkTool CreatePipeNetworkTool,
+        UpdatePipeTool UpdatePipeTool,
+        DeletePipeTool DeletePipeTool,
+        RecordingSaveService SaveService);
 
     internal static Container Create(
         InMemoryDrawing? drawing = null,
@@ -57,6 +60,7 @@ internal static class EditingTestHarness
         var services = new ServiceCollection();
         var events = new InMemoryDomainEventDispatcher();
         var undo = new RecordingUndoContext();
+        var saveService = new RecordingSaveService();
 
         services.AddSingleton(drawing);
         services.AddSingleton<IAlignmentRepository, FakeAlignmentRepository>();
@@ -72,6 +76,10 @@ internal static class EditingTestHarness
         services.AddSingleton<ICreatePipeService, CreatePipeService>();
         services.AddSingleton<IPipeNetworkCreateRepository, FakePipeNetworkCreateRepository>();
         services.AddSingleton<ICreatePipeNetworkService, CreatePipeNetworkService>();
+        services.AddSingleton<IPipeUpdateRepository, FakePipeUpdateRepository>();
+        services.AddSingleton<IUpdatePipeService, UpdatePipeService>();
+        services.AddSingleton<IPipeDeleteRepository, FakePipeDeleteRepository>();
+        services.AddSingleton<IDeletePipeService, DeletePipeService>();
         services.AddSingleton<IDomainEventDispatcher>(events);
         services.AddSingleton<IUndoContext>(undo);
         services.AddSingleton<ITransactionProvider>(sp => new FakeTransactionProvider(drawing));
@@ -101,6 +109,10 @@ internal static class EditingTestHarness
         services.AddTransient<ICommandValidator<CreatePipeCommand>, CreatePipeCommandValidator>();
         services.AddTransient<ICommandHandler<CreatePipeNetworkCommand, CreatePipeNetworkResult>, CreatePipeNetworkCommandHandler>();
         services.AddTransient<ICommandValidator<CreatePipeNetworkCommand>, CreatePipeNetworkCommandValidator>();
+        services.AddTransient<ICommandHandler<UpdatePipeCommand, UpdatePipeResult>, UpdatePipeCommandHandler>();
+        services.AddTransient<ICommandValidator<UpdatePipeCommand>, UpdatePipeCommandValidator>();
+        services.AddTransient<ICommandHandler<DeletePipeCommand, DeletePipeResult>, DeletePipeCommandHandler>();
+        services.AddTransient<ICommandValidator<DeletePipeCommand>, DeletePipeCommandValidator>();
 
         ServiceProvider provider = services.BuildServiceProvider();
         var tools = new Container(
@@ -133,7 +145,21 @@ internal static class EditingTestHarness
                 provider.GetRequiredService<ICommandDispatcher>(),
                 provider.GetRequiredService<IConfirmationGate>(),
                 provider.GetRequiredService<IUndoContext>(),
-                requireConfirmation));
+                requireConfirmation),
+            new UpdatePipeTool(
+                provider.GetRequiredService<ICivil3DSession>(),
+                provider.GetRequiredService<ICommandDispatcher>(),
+                provider.GetRequiredService<IConfirmationGate>(),
+                provider.GetRequiredService<IUndoContext>(),
+                requireConfirmation),
+            new DeletePipeTool(
+                provider.GetRequiredService<ICivil3DSession>(),
+                provider.GetRequiredService<ICommandDispatcher>(),
+                saveService,
+                provider.GetRequiredService<IConfirmationGate>(),
+                provider.GetRequiredService<IUndoContext>(),
+                requireConfirmation),
+            saveService);
 
         return tools;
     }
@@ -201,4 +227,34 @@ internal sealed class FakeSession : ICivil3DSession
 internal sealed class GrantingConfirmationGate : IConfirmationGate
 {
     public bool IsGranted(ICommand command, string correlationId) => true;
+}
+
+/// <summary>
+/// Records save-service invocations so delete_pipe tests can assert that the drawing was saved
+/// after a successful deletion (and not saved after a failed one).
+/// </summary>
+internal sealed class RecordingSaveService : ISaveDrawingService
+{
+    public int SaveCount { get; private set; }
+    public bool LastZoomToExtents { get; private set; }
+    public Exception? Failure { get; set; }
+
+    public SaveDrawingResult Save(ActiveDrawing drawing, bool zoomToExtents, CancellationToken cancellationToken)
+    {
+        SaveCount++;
+        LastZoomToExtents = zoomToExtents;
+        if (Failure is not null)
+        {
+            throw Failure;
+        }
+
+        return new SaveDrawingResult
+        {
+            Success = true,
+            DrawingName = drawing.DrawingName,
+            DrawingPath = drawing.DrawingPath,
+            SavedAtUtc = DateTime.UtcNow,
+            ZoomedToExtents = zoomToExtents,
+        };
+    }
 }

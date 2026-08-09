@@ -4,6 +4,7 @@ using Civil3D.Domain.Commands.Transactions;
 using Civil3D.Domain.Dtos;
 using Civil3D.Domain.Errors;
 using Civil3D.Domain.Pipes.Dtos;
+using Civil3D.Domain.Pipes.Materials;
 using Civil3D.Domain.Pipes.Repositories;
 using Civil3D.Domain.Query;
 using Civil3D.Domain.Surfaces.Dtos;
@@ -47,7 +48,7 @@ internal sealed class InMemoryDrawing
         public long Id { get; } = id;
         public string Name { get; } = name;
         public string PartFamilyDescription { get; } = partFamilyDescription;
-        public FakePartSize Size { get; } = size;
+        public FakePartSize Size { get; set; } = size;
         public double StartEasting { get; set; }
         public double StartNorthing { get; set; }
         public double StartElevation { get; set; }
@@ -128,6 +129,12 @@ internal sealed class InMemoryDrawing
     public FakeNetwork? FindNetwork(long id) => _networks.FirstOrDefault(n => n.Id == id);
     public FakeNetwork? FindNetworkByName(string name)
         => _networks.FirstOrDefault(n => string.Equals(n.Name, name, StringComparison.OrdinalIgnoreCase));
+
+    public FakePipe? FindPipe(long pipeId)
+        => _networks.SelectMany(n => n.Pipes).FirstOrDefault(p => p.Id == pipeId);
+
+    public FakeNetwork? FindNetworkByPipe(long pipeId)
+        => _networks.FirstOrDefault(n => n.Pipes.Any(p => p.Id == pipeId));
 
     public long NextPipeId() => _nextPipeId++;
 
@@ -338,6 +345,20 @@ internal sealed class FakePipeCreateRepository : IPipeCreateRepository
                 .ToList();
         }
 
+        if (matches.Count == 0 && !string.IsNullOrWhiteSpace(specification.FallbackMatch))
+        {
+            // Mirrors the real repository: aliases (RCP -> Concrete, DI -> Ductile Iron) resolve to
+            // the canonical material name for the final retry.
+            string? canonical = PipeMaterials.Resolve(specification.FallbackMatch)?.Name;
+            if (!string.IsNullOrWhiteSpace(canonical)
+                && !canonical.Equals(specification.FallbackMatch.Trim(), StringComparison.OrdinalIgnoreCase))
+            {
+                matches = network.PartFamilies
+                    .Where(f => f.Description.Contains(canonical, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+        }
+
         if (matches.Count == 0)
         {
             string available = string.Join(", ", network.PartFamilies.Select(f => f.Description));
@@ -428,7 +449,9 @@ internal sealed class FakePipeNetworkCreateRepository : IPipeNetworkCreateReposi
 
         foreach (string material in specification.Materials)
         {
-            string description = $"{material} Pipe";
+            // Mirror the real repository: the first catalog variant for the material wins (the
+            // shared PipeMaterials catalog also resolves aliases such as RCP -> Concrete Pipe SI).
+            string description = PipeMaterials.CatalogVariants(material)[0];
             double[] sizes = specification.SizesMm.Count > 0
                 ? specification.SizesMm.ToArray()
                 : [100, 150, 200, 250, 300];
@@ -448,5 +471,131 @@ internal sealed class FakePipeNetworkCreateRepository : IPipeNetworkCreateReposi
             FamiliesAdded = familiesAdded,
             FamiliesFailed = familiesFailed,
         };
+    }
+}
+
+/// <summary>Update-pipe write repository over the in-memory drawing: resolves the pipe by its
+/// stable numeric id, applies elevation/length/diameter changes mirroring the real repository's
+/// semantics (elevation of both ends, end moved along the current bearing for length, closest
+/// available size for diameter), and returns the pipe state read back.</summary>
+internal sealed class FakePipeUpdateRepository : IPipeUpdateRepository
+{
+    private readonly InMemoryDrawing _drawing;
+    public FakePipeUpdateRepository(InMemoryDrawing drawing) => _drawing = drawing;
+
+    public UpdatePipeOutcome Update(IWriteTransaction transaction, UpdatePipeSpecification specification)
+    {
+        if (transaction.Handle is not InMemoryDrawing drawing)
+        {
+            throw new DomainException(DomainErrorCode.TransactionFailed, "bad transaction handle");
+        }
+
+        InMemoryDrawing.FakePipe pipe = drawing.FindPipe(specification.PipeId)
+            ?? throw new DomainException(
+                DomainErrorCode.EntityNotFound,
+                $"No pipe with id {specification.PipeId} was found.");
+        InMemoryDrawing.FakeNetwork network = drawing.FindNetworkByPipe(pipe.Id)
+            ?? throw new DomainException(DomainErrorCode.EntityNotFound, "not found");
+
+        var changes = new List<string>();
+
+        if (specification.ElevationMeters is { } elevation)
+        {
+            pipe.StartElevation = elevation;
+            pipe.EndElevation = elevation;
+            changes.Add("elevation");
+        }
+
+        if (specification.LengthMeters is { } length)
+        {
+            double deltaX = pipe.EndEasting - pipe.StartEasting;
+            double deltaY = pipe.EndNorthing - pipe.StartNorthing;
+            double horizontal = Math.Sqrt((deltaX * deltaX) + (deltaY * deltaY));
+            if (horizontal <= 1e-9)
+            {
+                throw new DomainException(
+                    DomainErrorCode.ValidationFailed,
+                    $"Pipe '{pipe.Name}' has no horizontal direction; its length cannot be rescaled.");
+            }
+
+            double unitX = deltaX / horizontal;
+            double unitY = deltaY / horizontal;
+            pipe.EndEasting = pipe.StartEasting + (unitX * length);
+            pipe.EndNorthing = pipe.StartNorthing + (unitY * length);
+            changes.Add("length");
+        }
+
+        if (specification.DiameterMm is { } diameterMm)
+        {
+            InMemoryDrawing.FakePartFamily family = network.PartFamilies
+                .Single(f => f.Description == pipe.PartFamilyDescription);
+            pipe.Size = family.Sizes
+                .OrderBy(s => Math.Abs(s.DiameterMm - diameterMm))
+                .First();
+            changes.Add("diameter");
+        }
+
+        pipe.Length3D = Math.Sqrt(
+            Math.Pow(pipe.EndEasting - pipe.StartEasting, 2) +
+            Math.Pow(pipe.EndNorthing - pipe.StartNorthing, 2) +
+            Math.Pow(pipe.EndElevation - pipe.StartElevation, 2));
+
+        return new UpdatePipeOutcome
+        {
+            PipeId = pipe.Id,
+            Name = pipe.Name,
+            NetworkId = network.Id,
+            NetworkName = network.Name,
+            PartFamilyName = pipe.PartFamilyDescription,
+            PartSizeName = pipe.Size.Name,
+            Material = null,
+            InnerDiameterOrWidth = pipe.Size.DiameterMm / 1000.0,
+            OuterDiameterOrWidth = pipe.Size.DiameterMm / 1000.0,
+            StartEasting = pipe.StartEasting,
+            StartNorthing = pipe.StartNorthing,
+            StartElevation = pipe.StartElevation,
+            EndEasting = pipe.EndEasting,
+            EndNorthing = pipe.EndNorthing,
+            EndElevation = pipe.EndElevation,
+            Length3D = pipe.Length3D,
+            ChangesApplied = changes,
+        };
+    }
+}
+
+/// <summary>Delete-pipe write repository over the in-memory drawing: resolves the pipe by its
+/// stable numeric id, reads its identity back, and removes it from its network — mirroring the
+/// real repository's semantics (EntityNotFound when missing, identity returned before removal).</summary>
+internal sealed class FakePipeDeleteRepository : IPipeDeleteRepository
+{
+    private readonly InMemoryDrawing _drawing;
+    public FakePipeDeleteRepository(InMemoryDrawing drawing) => _drawing = drawing;
+
+    public DeletePipeOutcome Delete(IWriteTransaction transaction, DeletePipeSpecification specification)
+    {
+        if (transaction.Handle is not InMemoryDrawing drawing)
+        {
+            throw new DomainException(DomainErrorCode.TransactionFailed, "bad transaction handle");
+        }
+
+        InMemoryDrawing.FakePipe pipe = drawing.FindPipe(specification.PipeId)
+            ?? throw new DomainException(
+                DomainErrorCode.EntityNotFound,
+                $"No pipe with id {specification.PipeId} was found.");
+        InMemoryDrawing.FakeNetwork network = drawing.FindNetworkByPipe(pipe.Id)
+            ?? throw new DomainException(DomainErrorCode.EntityNotFound, "not found");
+
+        var outcome = new DeletePipeOutcome
+        {
+            PipeId = pipe.Id,
+            Name = pipe.Name,
+            NetworkId = network.Id,
+            NetworkName = network.Name,
+            PartFamilyName = pipe.PartFamilyDescription,
+            PartSizeName = pipe.Size.Name,
+        };
+
+        network.Pipes.Remove(pipe);
+        return outcome;
     }
 }

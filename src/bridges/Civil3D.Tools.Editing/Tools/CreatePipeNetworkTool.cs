@@ -21,7 +21,8 @@ namespace Civil3D.Tools.Editing.Tools;
     "create_pipe_network",
     "Create Pipe Network",
     "Creates a new pipe network in the current drawing, with a parts list that includes the " +
-    "requested pipe material families (for example HDPE, PVC, Concrete, Ductile Iron) taken from " +
+    "requested pipe material families (for example HDPE, PVC, Ductile Iron, Concrete/RCP, " +
+    "corrugated metal) taken from " +
     "the installed Civil 3D pipe catalog, then assigns the parts list to the network. Materials " +
     "without a matching catalog family are skipped and reported in familiesFailed. Optional " +
     "sizesMm adds nominal inner diameters (millimetres) as sizes to the added families so a later " +

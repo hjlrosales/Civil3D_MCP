@@ -1,7 +1,7 @@
 # Autodesk MCP Platform — Editing Tools (Phase 5B/5C)
 
 **Status:** Implemented
-**Date:** 2026-08-09 (Phase 5C: `create_pipe` added)
+**Date:** 2026-08-09 (Phase 5C: `create_pipe` + multi-material pipe support with SDR/PN validation)
 **Scope:** The first production editing commands — `rename_alignment` and `rename_surface`
 (Phase 5B), and the first *creation* command, `create_pipe` (Phase 5C) — exercising the complete
 write pipeline end-to-end. This document is the standard reference for all future write
@@ -201,7 +201,19 @@ CommandDispatcher (validation → permission → confirmation → progress)
 
 `CreatePipeTool` builds the default `PartFamilyMatch` from the discrete `Material`/`Sdr`/
 `PressureClassBar` request fields (for example `HDPE` + `17` + `10` → `"HDPE SDR17 PN10"`) unless
-the caller supplies an explicit override. The pipe is always **horizontal**: the tool computes the
+the caller supplies an explicit override.
+
+**Material-aware rating validation.** The domain `PipeMaterials` catalog (the single source of
+truth shared with `create_pipe_network`'s family resolution) defines, per material, the catalog
+family-description variants and the standard SDR / PN rating sets: HDPE (SDR 11/17/26/32.5,
+PN 6/8/10/16), PVC (SDR 26/35/41, PN 6/10/12.5/16), Ductile Iron (PN 10/16/25/40 — pressure
+class only, no SDR) and Concrete/RCP (no SDR/PN). `CreatePipeService` rejects ratings that are
+not standard for the requested material with `E_VALIDATION_FAILED` — for example SDR on a Ductile
+Iron pipe, or SDR 99 on HDPE. Unknown materials skip rating validation (the bare text match still
+applies), so custom catalogs are unaffected. Aliases are accepted: `RCP` / `Reinforced Concrete`
+resolve to the Concrete family, `DI` to Ductile Iron.
+
+The pipe is always **horizontal**: the tool computes the
 end point from `StartEasting`/`StartNorthing` + `LengthMeters` at `DirectionDegrees` (0 =
 +Easting axis, counter-clockwise), holding elevation constant — sloped pipes are out of scope for
 this command.
@@ -215,3 +227,22 @@ like rename's `E_OBJECT_NOT_FOUND` for a missing alignment/surface id.
 | Network missing | `EntityNotFound` | `E_OBJECT_NOT_FOUND` |
 | Empty network name / part match / non-positive diameter or length | validator | `E_VALIDATION_FAILED` |
 | No / ambiguous pipe part family match | `PartNotFound` | `E_VALIDATION_FAILED` |
+| Non-standard SDR/PN for the material (for example SDR on Ductile Iron, SDR 99 on HDPE) | `ValidationFailed` | `E_VALIDATION_FAILED` |
+
+---
+
+## 11. `delete_pipe`
+
+The counterpart to `create_pipe`: removes an existing pipe from its network by the stable
+numeric id (returned by `create_pipe` or `list_pipe_networks`) through the same command
+pipeline. The repository opens the pipe for write, reads its identity back (name, network, part
+family and size), and erases it via `Pipe.Erase()` (the Civil 3D `Network` API has no dedicated
+delete-pipe method). The deletion happens inside the write transaction, so a later failure rolls
+it back atomically. After the command commits, the tool best-effort saves the drawing (reusing
+`ISaveDrawingService`) so the deletion persists — a failed save never fails a successful delete.
+
+| Failure | Domain code | Protocol code |
+|---|---|---|
+| Pipe id not positive | validator | `E_VALIDATION_FAILED` |
+| Pipe missing | `EntityNotFound` | `E_OBJECT_NOT_FOUND` |
+| Civil 3D rejects the erasure | `TransactionFailed` | `E_TRANSACTION_FAILED` |

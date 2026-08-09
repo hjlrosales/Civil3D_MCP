@@ -137,7 +137,9 @@ public class CreatePipeToolTests
     public async Task CreatePipe_NoMatchingPartFamily_MapsToValidationFailed()
     {
         Container c = Create();
-        CreatePipeRequest request = HdpeRequest() with { Material = "Concrete" };
+        // Ductile Iron with a standard PN16 rating passes material-aware rating validation, so the
+        // failure must be the missing family, not the rating.
+        CreatePipeRequest request = HdpeRequest() with { Material = "Ductile Iron", Sdr = null, PressureClassBar = 16 };
 
         BridgeException ex = await Assert.ThrowsAsync<BridgeException>(() => CreatePipeAsync(c, request));
 

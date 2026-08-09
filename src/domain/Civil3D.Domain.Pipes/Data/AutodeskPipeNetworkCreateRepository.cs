@@ -6,6 +6,7 @@ using Civil3D.Domain.Commands.Transactions;
 using Civil3D.Domain.Data;
 using Civil3D.Domain.Errors;
 using Civil3D.Domain.Pipes.Dtos;
+using Civil3D.Domain.Pipes.Materials;
 using Civil3D.Domain.Pipes.Repositories;
 
 namespace Civil3D.Domain.Pipes.Data;
@@ -26,17 +27,6 @@ namespace Civil3D.Domain.Pipes.Data;
 /// </remarks>
 public sealed class AutodeskPipeNetworkCreateRepository : IPipeNetworkCreateRepository
 {
-    private static readonly IReadOnlyDictionary<string, string[]> MaterialCatalogVariants =
-        new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["HDPE"] = ["HDPE Pipe SI", "HDPE Pipe"],
-            ["PVC"] = ["PVC Pipe SI", "PVC Pipe"],
-            ["Concrete"] = ["Concrete Pipe SI", "Concrete Pipe"],
-            ["Ductile Iron"] = ["Ductile Iron Pipe SI", "Ductile Iron Pipe"],
-            ["Corrugated HDPE"] = ["Corrugated HDPE Pipe SI", "Corrugated HDPE Pipe"],
-            ["Corrugated Metal"] = ["Corrugated Metal Pipe SI", "Corrugated Metal Pipe"],
-        };
-
     private readonly IAutodeskDocumentContext _context;
 
     /// <summary>Creates the repository over the document context.</summary>
@@ -204,18 +194,9 @@ public sealed class AutodeskPipeNetworkCreateRepository : IPipeNetworkCreateRepo
     }
 
     /// <summary>
-    /// Returns the catalog family-description variants to try for a material: the known map first,
-    /// then a generic "&lt;material&gt; Pipe SI" / "&lt;material&gt; Pipe" fallback so unknown
-    /// materials still resolve when the catalog names them that way.
+    /// Returns the catalog family-description variants to try for a material from the shared
+    /// <see cref="PipeMaterials"/> catalog (known materials and aliases such as RCP first, then a
+    /// generic "&lt;material&gt; Pipe SI" / "&lt;material&gt; Pipe" fallback for unknown ones).
     /// </summary>
-    private static string[] CatalogVariants(string material)
-    {
-        string trimmed = material.Trim();
-        if (MaterialCatalogVariants.TryGetValue(trimmed, out string[]? known))
-        {
-            return known;
-        }
-
-        return [$"{trimmed} Pipe SI", $"{trimmed} Pipe"];
-    }
+    private static IReadOnlyList<string> CatalogVariants(string material) => PipeMaterials.CatalogVariants(material);
 }

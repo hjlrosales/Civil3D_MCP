@@ -48,4 +48,16 @@ public sealed record CreatePipeSpecification
     /// the rating (for example "HDPE Pipe SI"). Never set for explicit user-supplied matches.
     /// </summary>
     public string? FallbackMatch { get; init; }
+
+    /// <summary>
+    /// The bare pipe material (for example "HDPE", "PVC", "Ductile Iron"), when the caller
+    /// supplied one; drives material-aware SDR/PN rating validation.
+    /// </summary>
+    public string? Material { get; init; }
+
+    /// <summary>Standard Dimension Ratio (for example "17"), when the material is SDR-rated.</summary>
+    public string? Sdr { get; init; }
+
+    /// <summary>Nominal pressure class in bar (for example 10 for PN10), when the material is pressure-rated.</summary>
+    public double? PressureClassBar { get; init; }
 }
