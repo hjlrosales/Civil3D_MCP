@@ -69,6 +69,7 @@ See `docs/QuickStart.md` and `docs/Installation.md` for the full walkthrough.
 | `docs/CUT-FILL.md` | `cut_fill_report` workflow |
 | `docs/CORRIDOR-ANALYSIS.md` | `corridor_analysis_report` workflow |
 | `docs/LANDXML-EXPORT.md` | `export_landxml` workflow |
+| `ai-workflow/` | working on this repo with an AI assistant: workflow, rules, patterns, checklists |
 
 ## Examples
 
